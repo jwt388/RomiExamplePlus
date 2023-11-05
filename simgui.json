@@ -19,6 +19,21 @@
       "/SmartDashboard/SendableChooser[0]": "String Chooser"
     }
   },
+  "NetworkTables": {
+    "retained": {
+      "SmartDashboard": {
+        "SendableChooser[0]": {
+          "open": true
+        },
+        "open": true
+      }
+    },
+    "transitory": {
+      "SmartDashboard": {
+        "open": true
+      }
+    }
+  },
   "Plot": {
     "Plot <0>": {
       "plots": [
