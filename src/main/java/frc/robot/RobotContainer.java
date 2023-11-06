@@ -5,12 +5,16 @@
 package frc.robot;
 
 import edu.wpi.first.wpilibj.GenericHID;
-import edu.wpi.first.wpilibj.Joystick;
+//import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
+//import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.commands.ArcadeDrive;
 import frc.robot.commands.AutonomousDistance;
 import frc.robot.commands.AutonomousTime;
 import frc.robot.commands.DriveBox;
+import frc.robot.commands.DriveArcDistance;
+import frc.robot.commands.ResetXVelocity;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.OnBoardIO;
 import frc.robot.subsystems.OnBoardIO.ChannelMode;
@@ -29,10 +33,12 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final Drivetrain m_drivetrain = new Drivetrain();
-  private final OnBoardIO m_onboardIO = new OnBoardIO(ChannelMode.INPUT, ChannelMode.INPUT);
+  private final OnBoardIO m_onboardIO = new OnBoardIO(ChannelMode.OUTPUT, ChannelMode.OUTPUT); // Enable LEDs
 
   // Assumes a gamepad plugged into channel 0
-  private final Joystick m_controller = new Joystick(0);
+  //private final Joystick m_controller = new Joystick(0);
+  private final XboxController m_controller = new XboxController(0); 
+  //private final CommandXboxController m_controller = new CommandXboxController(0); 
 
   // Create SmartDashboard chooser for autonomous routines
   private final SendableChooser<Command> m_chooser = new SendableChooser<>();
@@ -50,8 +56,15 @@ public class RobotContainer {
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
+
+    m_onboardIO.setGreenLed(false);
+    m_onboardIO.setRedLed(false);
+    
     // Configure the button bindings
     configureButtonBindings();
+
+    SmartDashboard.putData(m_drivetrain);
+
   }
 
   /**
@@ -68,13 +81,27 @@ public class RobotContainer {
     // Example of how to use the onboard IO
     Trigger onboardButtonA = new Trigger(m_onboardIO::getButtonAPressed);
     onboardButtonA
-        .onTrue(new PrintCommand("Button A Pressed"))
-        .onFalse(new PrintCommand("Button A Released"));
+        .onTrue(new PrintCommand("Romi Button A Pressed"))
+        .onFalse(new PrintCommand("Romi Button A Released"));
+
+    m_onboardIO.setRedLed(false);
+    m_onboardIO.setGreenLed(false);
+    //m_onboardIO.setYellowLed(false);
+
+    // Setup triggers for controller buttons
+    Trigger xButton = new JoystickButton(m_controller, XboxController.Button.kX.value);
+    //Trigger xButton = m_controller.x(); // For CommandXboxController
+
+
+    // Show when 'X' button of the joystick is pressed or released
+    xButton
+      .onTrue(new ResetXVelocity(m_drivetrain));
 
     // Setup SmartDashboard options
     m_chooser.setDefaultOption("Auto Routine Distance", new AutonomousDistance(m_drivetrain));
     m_chooser.addOption("Auto Routine Time", new AutonomousTime(m_drivetrain));
     m_chooser.addOption("Auto Routine Box", new DriveBox(m_drivetrain));
+    m_chooser.addOption("Auto Routine ArcDistance", new DriveArcDistance(-0.5, 20.0, 0.25, m_drivetrain));
     SmartDashboard.putData(m_chooser);
   }
 
@@ -94,6 +121,10 @@ public class RobotContainer {
    */
   public Command getArcadeDriveCommand() {
     return new ArcadeDrive(
-        m_drivetrain, () -> -m_controller.getRawAxis(1), () -> -m_controller.getRawAxis(2));
+        m_drivetrain, () -> -m_controller.getRawAxis(1), () -> -m_controller.getRawAxis(4));
   }
+
+  
+
+  
 }

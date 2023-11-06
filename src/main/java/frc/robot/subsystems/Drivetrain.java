@@ -4,17 +4,19 @@
 
 package frc.robot.subsystems;
 
+import edu.wpi.first.math.filter.LinearFilter;
 import edu.wpi.first.wpilibj.BuiltInAccelerometer;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import frc.robot.sensors.RomiGyro;
 import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Drivetrain extends SubsystemBase {
+
   private static final double kCountsPerRevolution = 1440.0;
   private static final double kWheelDiameterInch = 2.75591; // 70 mm
-  private static final double SpeedReduction = 0.5; 
 
   // The Romi has the left and right motors set to
   // PWM channels 0 and 1 respectively
@@ -34,6 +36,20 @@ public class Drivetrain extends SubsystemBase {
 
   // Set up the BuiltInAccelerometer
   private final BuiltInAccelerometer m_accelerometer = new BuiltInAccelerometer();
+  private double xVelocity = 0.0;
+  private double accelXOffset = 0.0;
+  private double filteredAccelX;
+  LinearFilter filterAccel = LinearFilter.movingAverage(10);
+
+  // Variables to calculate wheel velocities
+  private double lastLeftDistanceInch;
+  private double lastRightDistanceInch;
+  private double newLeftDistanceInch;
+  private double newRightDistanceInch;
+  private double leftVelocity;
+  private double rightVelocity;
+  LinearFilter filterLeft = LinearFilter.singlePoleIIR(0.25,0.02);
+  LinearFilter filterRight = LinearFilter.singlePoleIIR(0.25,0.02);
 
   /** Creates a new Drivetrain. */
   public Drivetrain() {
@@ -49,7 +65,7 @@ public class Drivetrain extends SubsystemBase {
   }
 
   public void arcadeDrive(double xaxisSpeed, double zaxisRotate) {
-    m_diffDrive.arcadeDrive(xaxisSpeed*SpeedReduction, zaxisRotate*SpeedReduction);
+    m_diffDrive.arcadeDrive(xaxisSpeed, zaxisRotate);
   }
 
   public void resetEncoders() {
@@ -131,13 +147,49 @@ public class Drivetrain extends SubsystemBase {
     return m_gyro.getAngleZ();
   }
 
-  /** Reset the gyro. */
+  /**
+   * Rate of turn in degrees-per-second around the Z-axis.
+   *
+   * @return rate of turn in degrees-per-second
+   */
+  public double getGyroRateZ() {
+    return m_gyro.getRateZ();
+  }
+
+  // Reset the gyro. 
   public void resetGyro() {
     m_gyro.reset();
   }
 
+  // Reset the accel offset and velocity estimate. Should only be called when level and not moving.
+  public void resetVelocity() {
+    accelXOffset = -filteredAccelX;
+    xVelocity = 0.0;
+  }
+
   @Override
   public void periodic() {
+
+    filteredAccelX = filterAccel.calculate(getAccelX());
+
     // This method will be called once per scheduler run
+    SmartDashboard.putNumber("X Accel", getAccelX());
+    SmartDashboard.putNumber("Z Angle", getGyroAngleZ()); 
+    SmartDashboard.putNumber("Z Rate", getGyroRateZ()); 
+
+    // Update X velocity from acceleration 
+    xVelocity += (getAccelX() + accelXOffset) * 0.02;
+    SmartDashboard.putNumber("X Accel Filtered", filteredAccelX);
+
+    // Update wheel velocities
+    newLeftDistanceInch = getLeftDistanceInch();
+    newRightDistanceInch = getRightDistanceInch();
+    leftVelocity = filterLeft.calculate((newLeftDistanceInch - lastLeftDistanceInch) * 50); // Filter and Scale for 20 msec frame time
+    rightVelocity = filterRight.calculate((newRightDistanceInch - lastRightDistanceInch) * 50);
+    lastLeftDistanceInch = newLeftDistanceInch;
+    lastRightDistanceInch = newRightDistanceInch;
+    SmartDashboard.putNumber("Average Velocity", (leftVelocity + rightVelocity)/2);
+
   }
+
 }

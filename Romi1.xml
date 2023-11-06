@@ -1,0 +1,45 @@
+<xml version="1.0">
+<dashboard>
+	<static-widget class="edu.wpi.first.smartdashboard.gui.elements.ConnectionIndicator">
+		<location x="312" y="5"/>
+	</static-widget>
+	<widget field="X Accel Filtered" type="Number" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="459" y="43"/>
+	</widget>
+	<widget field="X Velocity" type="Number" class="edu.wpi.first.smartdashboard.gui.elements.LinePlot">
+		<location x="354" y="240"/>
+		<width>312</width>
+		<height>226</height>
+	</widget>
+	<widget field="Z Angle" type="Number" class="edu.wpi.first.smartdashboard.gui.elements.TextBox">
+		<location x="79" y="224"/>
+	</widget>
+	<widget field="X Accel" type="Number" class="edu.wpi.first.smartdashboard.gui.elements.LinePlot">
+		<location x="354" y="6"/>
+		<width>310</width>
+		<height>226</height>
+		<property name="Buffer Size (samples)" value="500"/>
+		<property name="Autoscale Y Values" value="false"/>
+		<property name="Minimum Y Value" value="-1"/>
+	</widget>
+	<widget field="Z Rate" type="Number" class="edu.wpi.first.smartdashboard.gui.elements.SimpleDial">
+		<location x="-63" y="252"/>
+		<width>401</width>
+		<height>232</height>
+		<property name="Upper Limit" value="200.0"/>
+		<property name="Lower Limit" value="-200.0"/>
+	</widget>
+	<widget field="Scheduler" type="Scheduler" class="edu.wpi.first.smartdashboard.gui.elements.Scheduler">
+		<location x="19" y="129"/>
+	</widget>
+	<widget field="Drivetrain" type="Subsystem" class="edu.wpi.first.smartdashboard.gui.elements.Subsystem">
+		<location x="6" y="103"/>
+		<width>199</width>
+	</widget>
+	<widget field="SendableChooser[0]" type="String Chooser" class="edu.wpi.first.smartdashboard.gui.elements.Chooser">
+		<location x="1" y="2"/>
+	</widget>
+</dashboard>
+<live-window>
+</live-window>
+</xml>
