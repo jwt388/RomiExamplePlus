@@ -15,6 +15,13 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 public class Drivetrain extends SubsystemBase {
 
+
+  public static final double kMaxSpeed = 0.7; // meters per second
+  public static final double kMaxAngularSpeed = 1.5 * 2 * Math.PI; // 1.5 rotation per second
+
+  private static final double kTrackWidth = 5.551*0.0254; // meters (5.551 inches)
+  private static final double kWheelRadius = 0.07/2; // meters (d=2.75591 inches, 70 mm)
+
   private static final double kCountsPerRevolution = 1440.0;
   private static final double kWheelDiameterInch = 2.75591; // 70 mm
 
@@ -36,20 +43,21 @@ public class Drivetrain extends SubsystemBase {
 
   // Set up the BuiltInAccelerometer
   private final BuiltInAccelerometer m_accelerometer = new BuiltInAccelerometer();
-  private double xVelocity = 0.0;
+  private double xVelocity;
   private double accelXOffset = 0.0;
   private double filteredAccelX;
-  LinearFilter filterAccel = LinearFilter.movingAverage(10);
+  LinearFilter filterAccel = LinearFilter.singlePoleIIR(0.25,0.02);
 
   // Variables to calculate wheel velocities
-  private double lastLeftDistanceInch;
+  /*private double lastLeftDistanceInch;
   private double lastRightDistanceInch;
   private double newLeftDistanceInch;
   private double newRightDistanceInch;
   private double leftVelocity;
   private double rightVelocity;
-  LinearFilter filterLeft = LinearFilter.singlePoleIIR(0.25,0.02);
-  LinearFilter filterRight = LinearFilter.singlePoleIIR(0.25,0.02);
+  */
+  //LinearFilter filterLeft = LinearFilter.movingAverage(10);
+  //LinearFilter filterRight = LinearFilter.movingAverage(10);
 
   /** Creates a new Drivetrain. */
   public Drivetrain() {
@@ -59,13 +67,20 @@ public class Drivetrain extends SubsystemBase {
     m_rightMotor.setInverted(true);
 
     // Use inches as unit for encoder distances
-    m_leftEncoder.setDistancePerPulse((Math.PI * kWheelDiameterInch) / kCountsPerRevolution);
-    m_rightEncoder.setDistancePerPulse((Math.PI * kWheelDiameterInch) / kCountsPerRevolution);
+    m_leftEncoder.setDistancePerPulse((2 * Math.PI * kWheelRadius) / kCountsPerRevolution);
+    m_rightEncoder.setDistancePerPulse((2 * Math.PI * kWheelRadius) / kCountsPerRevolution);
     resetEncoders();
+
+    m_diffDrive.setDeadband(0.0);
+    SmartDashboard.putData(m_diffDrive);
   }
 
   public void arcadeDrive(double xaxisSpeed, double zaxisRotate) {
-    m_diffDrive.arcadeDrive(xaxisSpeed, zaxisRotate);
+    m_diffDrive.arcadeDrive(xaxisSpeed, zaxisRotate, false);
+  }
+
+  public void curvatureDrive(double xaxisSpeed, double zaxisRotate, boolean allowTurnInPlace) {
+    m_diffDrive.curvatureDrive(xaxisSpeed, zaxisRotate, allowTurnInPlace);
   }
 
   public void resetEncoders() {
@@ -79,6 +94,10 @@ public class Drivetrain extends SubsystemBase {
 
   public int getRightEncoderCount() {
     return m_rightEncoder.get();
+  }
+
+  public void setMaxOutput(double maxOutput) {
+    m_diffDrive.setMaxOutput(maxOutput);
   }
 
   public double getLeftDistanceInch() {
@@ -144,7 +163,7 @@ public class Drivetrain extends SubsystemBase {
    * @return The current angle of the Romi in degrees
    */
   public double getGyroAngleZ() {
-    return m_gyro.getAngleZ();
+    return -Math.IEEEremainder(m_gyro.getAngleZ(), 360);
   }
 
   /**
@@ -153,7 +172,7 @@ public class Drivetrain extends SubsystemBase {
    * @return rate of turn in degrees-per-second
    */
   public double getGyroRateZ() {
-    return m_gyro.getRateZ();
+    return -m_gyro.getRateZ();
   }
 
   // Reset the gyro. 
@@ -182,13 +201,17 @@ public class Drivetrain extends SubsystemBase {
     SmartDashboard.putNumber("X Accel Filtered", filteredAccelX);
 
     // Update wheel velocities
-    newLeftDistanceInch = getLeftDistanceInch();
+    /*newLeftDistanceInch = getLeftDistanceInch();
     newRightDistanceInch = getRightDistanceInch();
     leftVelocity = filterLeft.calculate((newLeftDistanceInch - lastLeftDistanceInch) * 50); // Filter and Scale for 20 msec frame time
     rightVelocity = filterRight.calculate((newRightDistanceInch - lastRightDistanceInch) * 50);
     lastLeftDistanceInch = newLeftDistanceInch;
     lastRightDistanceInch = newRightDistanceInch;
     SmartDashboard.putNumber("Average Velocity", (leftVelocity + rightVelocity)/2);
+    */
+
+    SmartDashboard.putNumber("Left Rate", m_leftEncoder.getRate());
+    SmartDashboard.putNumber("RIght Rate", m_rightEncoder.getRate());
 
   }
 

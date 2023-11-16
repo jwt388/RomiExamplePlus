@@ -4,16 +4,22 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.wpilibj.GenericHID;
 //import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.XboxController.Button;
 //import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.commands.ArcadeDrive;
+import frc.robot.commands.CurvatureDrive;
 import frc.robot.commands.AutonomousDistance;
 import frc.robot.commands.AutonomousTime;
 import frc.robot.commands.DriveBox;
 import frc.robot.commands.DriveArcDistance;
+import frc.robot.commands.TurnToAngle;
 import frc.robot.commands.ResetXVelocity;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.OnBoardIO;
@@ -21,6 +27,8 @@ import frc.robot.subsystems.OnBoardIO.ChannelMode;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.PIDCommand;
 import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
@@ -40,8 +48,13 @@ public class RobotContainer {
   private final XboxController m_controller = new XboxController(0); 
   //private final CommandXboxController m_controller = new CommandXboxController(0); 
 
-  // Create SmartDashboard chooser for autonomous routines
-  private final SendableChooser<Command> m_chooser = new SendableChooser<>();
+  // Create SmartDashboard choosers for autonomous routines and drive mode
+  private final SendableChooser<Command> m_chooserAuto = new SendableChooser<>();
+  private final SendableChooser<String> m_chooserDrive = new SendableChooser<>();
+
+  // Slew rate limiters for joystick inputs
+  private final SlewRateLimiter m_speedLimiter = new SlewRateLimiter(10);
+  private final SlewRateLimiter m_rotLimiter = new SlewRateLimiter(10);
 
   // NOTE: The I/O pin functionality of the 5 exposed I/O pins depends on the hardware "overlay"
   // that is specified when launching the wpilib-ws server on the Romi raspberry pi.
@@ -77,32 +90,70 @@ public class RobotContainer {
     // Default command is arcade drive. This will run unless another command
     // is scheduled over it.
     m_drivetrain.setDefaultCommand(getArcadeDriveCommand());
+    m_drivetrain.setMaxOutput( 1.0);
 
-    // Example of how to use the onboard IO
+    // Drive at half speed when the right bumper is held
+    new JoystickButton(m_controller, Button.kRightBumper.value)
+      .onTrue(new InstantCommand(() -> m_drivetrain.setMaxOutput(0.5)))
+      .onFalse(new InstantCommand(() -> m_drivetrain.setMaxOutput( 1.0)));
+
+    // Based on gyrodrivecommands example
+
+    // Stabilize the robot to drive straight when left bumper is held
+    double kStabilizationP = 0.005;
+    double kStabilizationI = 0.0;
+    double kStabilizationD = 0.0;
+    new JoystickButton(m_controller, Button.kLeftBumper.value)
+      .whileTrue(
+        new PIDCommand(
+          new PIDController(kStabilizationP, kStabilizationI, kStabilizationD), 
+          // Close the loop on turn rate
+          m_drivetrain::getGyroRateZ,
+          // Set point is 0 deg/sec
+          0,
+          // Pipe the output to the turning control
+          output ->  m_drivetrain.arcadeDrive(-m_controller.getRawAxis(1), output),
+          // Drivetrain is required
+          m_drivetrain));
+
+    // Turn to 90 degrees when the 'X' button is pressed, with a 5 second timeout
+    new JoystickButton(m_controller, Button.kX.value)
+        .onTrue(new TurnToAngle(90, m_drivetrain).withTimeout(5));
+        
+    // Turn to -90 degrees when the 'B' button is pressed, with a 5 second timeout
+    new JoystickButton(m_controller, Button.kB.value)
+        .onTrue(new TurnToAngle(-90, m_drivetrain).withTimeout(5));
+
+    /* Example of how to use the Romi onboard IO
     Trigger onboardButtonA = new Trigger(m_onboardIO::getButtonAPressed);
     onboardButtonA
         .onTrue(new PrintCommand("Romi Button A Pressed"))
         .onFalse(new PrintCommand("Romi Button A Released"));
+    */
 
     m_onboardIO.setRedLed(false);
     m_onboardIO.setGreenLed(false);
     //m_onboardIO.setYellowLed(false);
 
     // Setup triggers for controller buttons
-    Trigger xButton = new JoystickButton(m_controller, XboxController.Button.kX.value);
+    Trigger aButton = new JoystickButton(m_controller, XboxController.Button.kA.value);
     //Trigger xButton = m_controller.x(); // For CommandXboxController
 
-
-    // Show when 'X' button of the joystick is pressed or released
-    xButton
-      .onTrue(new ResetXVelocity(m_drivetrain));
+    // Reset velocity estimate when 'A' button of the contoroller is pressed
+    aButton
+      .onTrue(new InstantCommand(() -> m_drivetrain.resetVelocity() ));
+    //  .onTrue(new ResetXVelocity(m_drivetrain));
 
     // Setup SmartDashboard options
-    m_chooser.setDefaultOption("Auto Routine Distance", new AutonomousDistance(m_drivetrain));
-    m_chooser.addOption("Auto Routine Time", new AutonomousTime(m_drivetrain));
-    m_chooser.addOption("Auto Routine Box", new DriveBox(m_drivetrain));
-    m_chooser.addOption("Auto Routine ArcDistance", new DriveArcDistance(-0.5, 20.0, 0.25, m_drivetrain));
-    SmartDashboard.putData(m_chooser);
+    m_chooserAuto.setDefaultOption("Auto Routine Distance", new AutonomousDistance(m_drivetrain));
+    m_chooserAuto.addOption("Auto Routine Turn to 0", new TurnToAngle(0, m_drivetrain));
+    m_chooserAuto.addOption("Auto Routine Box", new DriveBox(m_drivetrain));
+    m_chooserAuto.addOption("Auto Routine ArcDistance", new DriveArcDistance(0.5, 25.0, 0.25, m_drivetrain));
+    SmartDashboard.putData(m_chooserAuto);
+
+    //m_chooserDrive.setDefaultOption("Drive Mode - Arcade", "Option1");
+    //m_chooserDrive.addOption("Drive Mode - Curvature", "Option 2");
+    //SmartDashboard.putData(m_chooserDrive);
   }
 
   /**
@@ -111,7 +162,7 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    return m_chooser.getSelected();
+    return m_chooserAuto.getSelected();
   }
 
   /**
@@ -121,10 +172,15 @@ public class RobotContainer {
    */
   public Command getArcadeDriveCommand() {
     return new ArcadeDrive(
-        m_drivetrain, () -> -m_controller.getRawAxis(1), () -> -m_controller.getRawAxis(4));
+        m_drivetrain, () -> -m_speedLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(1),0.1)),
+        () -> -m_rotLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(4),0.1)));
   }
 
-  
+  public Command getCurvatureDriveCommand() {
+    return new CurvatureDrive(
+        m_drivetrain, () -> -m_speedLimiter.calculate(m_controller.getRawAxis(1)),
+        () -> -m_rotLimiter.calculate(m_controller.getRawAxis(4)));
+  }
 
   
 }

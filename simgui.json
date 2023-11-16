@@ -16,9 +16,11 @@
   "NTProvider": {
     "types": {
       "/FMSInfo": "FMSInfo",
+      "/SmartDashboard/DifferentialDrive[1]": "DifferentialDrive",
       "/SmartDashboard/Drivetrain": "Subsystem",
       "/SmartDashboard/Scheduler": "Scheduler",
-      "/SmartDashboard/SendableChooser[0]": "String Chooser"
+      "/SmartDashboard/SendableChooser[0]": "String Chooser",
+      "/SmartDashboard/SendableChooser[1]": "String Chooser"
     }
   },
   "NetworkTables": {
@@ -32,9 +34,15 @@
     },
     "transitory": {
       "SmartDashboard": {
+        "DifferentialDrive[1]": {
+          "open": true
+        },
         "open": true
       }
     }
+  },
+  "NetworkTables View": {
+    "visible": false
   },
   "Plot": {
     "Plot <0>": {
