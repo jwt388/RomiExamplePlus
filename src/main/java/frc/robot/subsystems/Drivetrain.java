@@ -198,7 +198,7 @@ public class Drivetrain extends SubsystemBase {
 
     // Update X velocity from acceleration 
     xVelocity += (getAccelX() + accelXOffset) * 0.02;
-    SmartDashboard.putNumber("X Accel Filtered", filteredAccelX);
+    //SmartDashboard.putNumber("X Accel Filtered", filteredAccelX);
 
     // Update wheel velocities
     /*newLeftDistanceInch = getLeftDistanceInch();
