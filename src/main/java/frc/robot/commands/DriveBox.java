@@ -16,13 +16,13 @@ public class DriveBox extends SequentialCommandGroup {
    */
   public DriveBox(Drivetrain drivetrain) {
     addCommands(
-      new DriveDistance(-0.5, 20, drivetrain),
+      new DriveDistance(-0.5, 0.5, drivetrain),
       new TurnDegrees(0.5, 90, drivetrain),
-      new DriveDistance(-0.5, 20, drivetrain),
+      new DriveDistance(-0.5, 0.5, drivetrain),
       new TurnDegrees(0.5, 90, drivetrain),
-      new DriveDistance(-0.5, 20, drivetrain),
+      new DriveDistance(-0.5, 0.5, drivetrain),
       new TurnDegrees(0.5, 90, drivetrain),
-      new DriveDistance(-0.5, 20, drivetrain),
+      new DriveDistance(-0.5, 0.5, drivetrain),
       new TurnDegrees(0.5, 90, drivetrain));
   }
 }

@@ -18,6 +18,7 @@
       "/FMSInfo": "FMSInfo",
       "/SmartDashboard/DifferentialDrive[1]": "DifferentialDrive",
       "/SmartDashboard/Drivetrain": "Subsystem",
+      "/SmartDashboard/Field": "Field2d",
       "/SmartDashboard/Scheduler": "Scheduler",
       "/SmartDashboard/SendableChooser[0]": "String Chooser",
       "/SmartDashboard/SendableChooser[1]": "String Chooser"
@@ -25,6 +26,9 @@
   },
   "NetworkTables": {
     "retained": {
+      "Romi": {
+        "open": true
+      },
       "SmartDashboard": {
         "SendableChooser[0]": {
           "open": true

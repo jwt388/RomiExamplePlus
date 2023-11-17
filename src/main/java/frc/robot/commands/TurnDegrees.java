@@ -4,13 +4,16 @@
 
 package frc.robot.commands;
 
+import frc.robot.Constants;
 import frc.robot.subsystems.Drivetrain;
+import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 
 public class TurnDegrees extends CommandBase {
   private final Drivetrain m_drive;
   private final double m_degrees;
   private final double m_speed;
+  private final double distanceToTravel;
 
   /**
    * Creates a new TurnDegrees. This command will turn your robot for a desired rotation (in
@@ -25,44 +28,55 @@ public class TurnDegrees extends CommandBase {
     m_speed = speed;
     m_drive = drive;
     addRequirements(drive);
+
+    /* Need to convert distance travelled to degrees. The Standard
+      Romi Chassis found here, https://www.pololu.com/category/203/romi-chassis-kits,
+      has a wheel placement diameter (149 mm) - width of the wheel (8 mm) = 141 mm
+      or 5.551 inches. We then take into consideration the width of the tires.
+    */
+    double metersPerDegree = Math.PI * Constants.kTrackWidth / 360;
+    // Compare distance travelled from start to distance based on degree turn
+    distanceToTravel = (metersPerDegree * m_degrees);
   }
 
   // Called when the command is initially scheduled.
   @Override
   public void initialize() {
     // Set motors to stop, read encoder values for starting point
-    m_drive.arcadeDrive(0, 0);
+    m_drive.arcadeDrive(0, 0, false);
     m_drive.resetEncoders();
+
+    DataLogManager.log("Turn Distance: " + distanceToTravel);
+
   }
 
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    m_drive.arcadeDrive(0, m_speed);
+    m_drive.arcadeDrive(0, m_speed, false);
   }
 
   // Called once the command ends or is interrupted.
   @Override
   public void end(boolean interrupted) {
-    m_drive.arcadeDrive(0, 0);
+    m_drive.arcadeDrive(0, 0, false);
   }
 
   // Returns true when the command should end.
   @Override
   public boolean isFinished() {
-    /* Need to convert distance travelled to degrees. The Standard
-       Romi Chassis found here, https://www.pololu.com/category/203/romi-chassis-kits,
-       has a wheel placement diameter (149 mm) - width of the wheel (8 mm) = 141 mm
-       or 5.551 inches. We then take into consideration the width of the tires.
-    */
-    double inchPerDegree = Math.PI * 5.551 / 360;
+    
+
     // Compare distance travelled from start to distance based on degree turn
-    return getAverageTurningDistance() >= (inchPerDegree * m_degrees);
+    return getAverageTurningDistance() >= distanceToTravel;
   }
 
   private double getAverageTurningDistance() {
-    double leftDistance = Math.abs(m_drive.getLeftDistanceInch());
-    double rightDistance = Math.abs(m_drive.getRightDistanceInch());
+    double leftDistance = Math.abs(m_drive.getLeftDistanceMeters());
+    double rightDistance = Math.abs(m_drive.getRightDistanceMeters());
+
+    DataLogManager.log("Left: " + leftDistance + " Right: " + rightDistance);
+
     return (leftDistance + rightDistance) / 2.0;
   }
 }

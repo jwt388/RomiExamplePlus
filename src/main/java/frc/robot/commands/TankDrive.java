@@ -8,10 +8,10 @@ import frc.robot.subsystems.Drivetrain;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import java.util.function.Supplier;
 
-public class ArcadeDrive extends CommandBase {
+public class TankDrive extends CommandBase {
   private final Drivetrain m_drivetrain;
-  private final Supplier<Double> m_xaxisSpeedSupplier;
-  private final Supplier<Double> m_zaxisRotateSupplier;
+  private final Supplier<Double> m_leftSpeedSupplier;
+  private final Supplier<Double> m_rightSpeedSupplier;
 
   /**
    * Creates a new ArcadeDrive. This command will drive your robot according to the speed supplier
@@ -21,13 +21,13 @@ public class ArcadeDrive extends CommandBase {
    * @param xaxisSpeedSupplier Lambda supplier of forward/backward speed
    * @param zaxisRotateSupplier Lambda supplier of rotational speed
    */
-  public ArcadeDrive(
+  public TankDrive(
       Drivetrain drivetrain,
-      Supplier<Double> xaxisSpeedSupplier,
-      Supplier<Double> zaxisRotateSupplier) {
+      Supplier<Double> leftSpeedSupplier,
+      Supplier<Double> rightSpeedSupplier) {
     m_drivetrain = drivetrain;
-    m_xaxisSpeedSupplier = xaxisSpeedSupplier;
-    m_zaxisRotateSupplier = zaxisRotateSupplier;
+    m_leftSpeedSupplier = leftSpeedSupplier;
+    m_rightSpeedSupplier = rightSpeedSupplier;
     addRequirements(drivetrain);
   }
 
@@ -38,7 +38,7 @@ public class ArcadeDrive extends CommandBase {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    m_drivetrain.arcadeDrive(m_xaxisSpeedSupplier.get(), m_zaxisRotateSupplier.get(), true);
+    m_drivetrain.tankDrive(m_leftSpeedSupplier.get(), m_rightSpeedSupplier.get());
   }
 
   // Called once the command ends or is interrupted.

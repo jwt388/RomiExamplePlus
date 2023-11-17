@@ -4,26 +4,29 @@
 
 package frc.robot.subsystems;
 
-import edu.wpi.first.math.filter.LinearFilter;
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
+import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
+import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.wpilibj.BuiltInAccelerometer;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.drive.DifferentialDrive.WheelSpeeds;
+import frc.robot.Constants;
 import frc.robot.sensors.RomiGyro;
 import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
+// Adapted from differentialdrivebot example
 
 public class Drivetrain extends SubsystemBase {
 
 
-  public static final double kMaxSpeed = 0.7; // meters per second
-  public static final double kMaxAngularSpeed = 1.5 * 2 * Math.PI; // 1.5 rotation per second
-
-  private static final double kTrackWidth = 5.551*0.0254; // meters (5.551 inches)
-  private static final double kWheelRadius = 0.07/2; // meters (d=2.75591 inches, 70 mm)
-
-  private static final double kCountsPerRevolution = 1440.0;
-  private static final double kWheelDiameterInch = 2.75591; // 70 mm
 
   // The Romi has the left and right motors set to
   // PWM channels 0 and 1 respectively
@@ -41,43 +44,109 @@ public class Drivetrain extends SubsystemBase {
   // Set up the RomiGyro
   private final RomiGyro m_gyro = new RomiGyro();
 
+  private final PIDController m_leftPIDController = new PIDController(1, 0, 0);
+  private final PIDController m_rightPIDController = new PIDController(1, 0, 0);
+
+  private final DifferentialDriveKinematics m_kinematics = new DifferentialDriveKinematics(Constants.kTrackWidth);
+
+  private final DifferentialDriveOdometry m_odometry;
+  private Pose2d m_pose;
+  private final Field2d m_field = new Field2d();
+
+
+  public static final double kS = 0.38069; // from Daltz333 example
+  public static final double kV = 9.5975; //
+
+  private final SimpleMotorFeedforward m_feedforward = new SimpleMotorFeedforward(kS, kV);
+
+
   // Set up the BuiltInAccelerometer
   private final BuiltInAccelerometer m_accelerometer = new BuiltInAccelerometer();
-  private double xVelocity;
-  private double accelXOffset = 0.0;
-  private double filteredAccelX;
-  LinearFilter filterAccel = LinearFilter.singlePoleIIR(0.25,0.02);
-
-  // Variables to calculate wheel velocities
-  /*private double lastLeftDistanceInch;
-  private double lastRightDistanceInch;
-  private double newLeftDistanceInch;
-  private double newRightDistanceInch;
-  private double leftVelocity;
-  private double rightVelocity;
-  */
-  //LinearFilter filterLeft = LinearFilter.movingAverage(10);
-  //LinearFilter filterRight = LinearFilter.movingAverage(10);
 
   /** Creates a new Drivetrain. */
   public Drivetrain() {
+
+    m_gyro.reset();
+
     // We need to invert one side of the drivetrain so that positive voltages
     // result in both sides moving forward. Depending on how your robot's
     // gearbox is constructed, you might have to invert the left side instead.
     m_rightMotor.setInverted(true);
 
+
     // Use inches as unit for encoder distances
-    m_leftEncoder.setDistancePerPulse((2 * Math.PI * kWheelRadius) / kCountsPerRevolution);
-    m_rightEncoder.setDistancePerPulse((2 * Math.PI * kWheelRadius) / kCountsPerRevolution);
+    m_leftEncoder.setDistancePerPulse(2 * Math.PI * Constants.kWheelRadius / Constants.kEncoderResolution);
+    m_rightEncoder.setDistancePerPulse(2 * Math.PI * Constants.kWheelRadius / Constants.kEncoderResolution);
     resetEncoders();
 
     m_diffDrive.setDeadband(0.0);
+
+    m_odometry = new DifferentialDriveOdometry(
+        m_gyro.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
+
     SmartDashboard.putData(m_diffDrive);
+    SmartDashboard.putData("Field", m_field);
+
   }
 
-  public void arcadeDrive(double xaxisSpeed, double zaxisRotate) {
-    m_diffDrive.arcadeDrive(xaxisSpeed, zaxisRotate, false);
+    /**
+   * Sets the desired wheel speeds.
+   *
+   * @param speeds The desired wheel speeds.
+   */
+  public void setSpeeds(DifferentialDriveWheelSpeeds speeds) {
+    final double leftFeedforward = m_feedforward.calculate(speeds.leftMetersPerSecond);
+    final double rightFeedforward = m_feedforward.calculate(speeds.rightMetersPerSecond);
+
+    /*final double leftOutput =
+        m_leftPIDController.calculate(m_leftEncoder.getRate(), speeds.leftMetersPerSecond);
+    final double rightOutput =
+        m_rightPIDController.calculate(m_rightEncoder.getRate(), speeds.rightMetersPerSecond); */
+
+    final double leftOutput =
+        m_leftPIDController.calculate(0.1, speeds.leftMetersPerSecond);
+    final double rightOutput =
+        m_rightPIDController.calculate(0.1, speeds.rightMetersPerSecond);
+
+    m_leftMotor.setVoltage(leftOutput + leftFeedforward);
+    m_rightMotor.setVoltage(rightOutput + rightFeedforward);
+
+    SmartDashboard.putNumber("Left PID output", leftOutput);
+    SmartDashboard.putNumber("Right PID output", rightOutput);
+
   }
+
+  /**
+   * Drives the robot with the given linear velocity and angular velocity.
+   *
+   * @param xSpeed Linear velocity in m/s.
+   * @param rot Angular velocity in rad/s.
+   */
+  public void drive(double xSpeed, double rot) {
+    var wheelSpeeds = m_kinematics.toWheelSpeeds(new ChassisSpeeds(xSpeed, 0.0, rot));
+    setSpeeds(wheelSpeeds);
+  }
+
+  /** Updates the field-relative position. */
+  public void updateOdometry() {
+    m_odometry.update(
+        m_gyro.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
+  }
+
+  /** Reset gyro and odometry to zero. */
+  public void resetOdometry() {
+    resetEncoders();
+    m_gyro.reset();
+    m_odometry.update(
+        m_gyro.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
+  }
+
+  public void arcadeDrive(double xaxisSpeed, double zaxisRotate, boolean squareInputs) {
+    m_diffDrive.arcadeDrive(xaxisSpeed, zaxisRotate, squareInputs);
+  } 
+  public void tankDrive(double leftSpeed, double rightRotate) {
+    m_diffDrive.tankDrive(leftSpeed, rightRotate, true);
+  } 
 
   public void curvatureDrive(double xaxisSpeed, double zaxisRotate, boolean allowTurnInPlace) {
     m_diffDrive.curvatureDrive(xaxisSpeed, zaxisRotate, allowTurnInPlace);
@@ -100,16 +169,16 @@ public class Drivetrain extends SubsystemBase {
     m_diffDrive.setMaxOutput(maxOutput);
   }
 
-  public double getLeftDistanceInch() {
+  public double getLeftDistanceMeters() {
     return m_leftEncoder.getDistance();
   }
 
-  public double getRightDistanceInch() {
+  public double getRightDistanceMeters() {
     return m_rightEncoder.getDistance();
   }
 
-  public double getAverageDistanceInch() {
-    return (getLeftDistanceInch() + getRightDistanceInch()) / 2.0;
+  public double getAverageDistanceMeters() {
+    return (getLeftDistanceMeters() + getRightDistanceMeters()) / 2.0;
   }
 
   /**
@@ -180,35 +249,21 @@ public class Drivetrain extends SubsystemBase {
     m_gyro.reset();
   }
 
-  // Reset the accel offset and velocity estimate. Should only be called when level and not moving.
-  public void resetVelocity() {
-    accelXOffset = -filteredAccelX;
-    xVelocity = 0.0;
-  }
-
   @Override
   public void periodic() {
 
-    filteredAccelX = filterAccel.calculate(getAccelX());
+    m_pose = m_odometry.update(
+        m_gyro.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
+
+    m_field.setRobotPose(m_odometry.getPoseMeters());
 
     // This method will be called once per scheduler run
-    SmartDashboard.putNumber("X Accel", getAccelX());
     SmartDashboard.putNumber("Z Angle", getGyroAngleZ()); 
     SmartDashboard.putNumber("Z Rate", getGyroRateZ()); 
 
-    // Update X velocity from acceleration 
-    xVelocity += (getAccelX() + accelXOffset) * 0.02;
-    //SmartDashboard.putNumber("X Accel Filtered", filteredAccelX);
-
-    // Update wheel velocities
-    /*newLeftDistanceInch = getLeftDistanceInch();
-    newRightDistanceInch = getRightDistanceInch();
-    leftVelocity = filterLeft.calculate((newLeftDistanceInch - lastLeftDistanceInch) * 50); // Filter and Scale for 20 msec frame time
-    rightVelocity = filterRight.calculate((newRightDistanceInch - lastRightDistanceInch) * 50);
-    lastLeftDistanceInch = newLeftDistanceInch;
-    lastRightDistanceInch = newRightDistanceInch;
-    SmartDashboard.putNumber("Average Velocity", (leftVelocity + rightVelocity)/2);
-    */
+    SmartDashboard.putNumber("Pose Deg", m_pose.getRotation().getDegrees());
+    SmartDashboard.putNumber("Pose X", m_pose.getX());
+    SmartDashboard.putNumber("Pose Y", m_pose.getY());
 
     SmartDashboard.putNumber("Left Rate", m_leftEncoder.getRate());
     SmartDashboard.putNumber("RIght Rate", m_rightEncoder.getRate());

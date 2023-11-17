@@ -18,9 +18,10 @@ import frc.robot.commands.CurvatureDrive;
 import frc.robot.commands.AutonomousDistance;
 import frc.robot.commands.AutonomousTime;
 import frc.robot.commands.DriveBox;
+import frc.robot.commands.ResetOdometry;
+import frc.robot.commands.TankDrive;
 import frc.robot.commands.DriveArcDistance;
 import frc.robot.commands.TurnToAngle;
-import frc.robot.commands.ResetXVelocity;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.OnBoardIO;
 import frc.robot.subsystems.OnBoardIO.ChannelMode;
@@ -53,8 +54,8 @@ public class RobotContainer {
   private final SendableChooser<String> m_chooserDrive = new SendableChooser<>();
 
   // Slew rate limiters for joystick inputs
-  private final SlewRateLimiter m_speedLimiter = new SlewRateLimiter(10);
-  private final SlewRateLimiter m_rotLimiter = new SlewRateLimiter(10);
+  private final SlewRateLimiter m_leftLimiter = new SlewRateLimiter(10);
+  private final SlewRateLimiter m_rightLimiter = new SlewRateLimiter(10);
 
   // NOTE: The I/O pin functionality of the 5 exposed I/O pins depends on the hardware "overlay"
   // that is specified when launching the wpilib-ws server on the Romi raspberry pi.
@@ -87,9 +88,16 @@ public class RobotContainer {
    * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
    */
   private void configureButtonBindings() {
-    // Default command is arcade drive. This will run unless another command
+
+    // Setup chooser for selecting drive mode
+    m_chooserDrive.setDefaultOption("Drive Mode - Arcade", "arcade");
+    m_chooserDrive.addOption("Drive Mode - Tank", "tank");
+    m_chooserDrive.addOption("Drive Mode - Curvature", "curve");
+    SmartDashboard.putData(m_chooserDrive);
+
+    // Default command is manual drive. This will run unless another command
     // is scheduled over it.
-    m_drivetrain.setDefaultCommand(getArcadeDriveCommand());
+    m_drivetrain.setDefaultCommand(getDriveCommand());
     m_drivetrain.setMaxOutput( 1.0);
 
     // Drive at half speed when the right bumper is held
@@ -100,19 +108,17 @@ public class RobotContainer {
     // Based on gyrodrivecommands example
 
     // Stabilize the robot to drive straight when left bumper is held
-    double kStabilizationP = 0.005;
-    double kStabilizationI = 0.0;
-    double kStabilizationD = 0.0;
+
     new JoystickButton(m_controller, Button.kLeftBumper.value)
       .whileTrue(
         new PIDCommand(
-          new PIDController(kStabilizationP, kStabilizationI, kStabilizationD), 
+          new PIDController(Constants.kStabilizationP, Constants.kStabilizationI, Constants.kStabilizationD), 
           // Close the loop on turn rate
           m_drivetrain::getGyroRateZ,
           // Set point is 0 deg/sec
           0,
           // Pipe the output to the turning control
-          output ->  m_drivetrain.arcadeDrive(-m_controller.getRawAxis(1), output),
+          output ->  m_drivetrain.arcadeDrive(-m_controller.getRawAxis(1), output, false),
           // Drivetrain is required
           m_drivetrain));
 
@@ -139,10 +145,9 @@ public class RobotContainer {
     Trigger aButton = new JoystickButton(m_controller, XboxController.Button.kA.value);
     //Trigger xButton = m_controller.x(); // For CommandXboxController
 
-    // Reset velocity estimate when 'A' button of the contoroller is pressed
+    // Reset gyro and odometry when 'A' button of the contoroller is pressed
     aButton
-      .onTrue(new InstantCommand(() -> m_drivetrain.resetVelocity() ));
-    //  .onTrue(new ResetXVelocity(m_drivetrain));
+      .onTrue(new InstantCommand(() -> m_drivetrain.resetOdometry() ));
 
     // Setup SmartDashboard options
     m_chooserAuto.setDefaultOption("Auto Routine Distance", new AutonomousDistance(m_drivetrain));
@@ -151,9 +156,6 @@ public class RobotContainer {
     m_chooserAuto.addOption("Auto Routine ArcDistance", new DriveArcDistance(0.5, 25.0, 0.25, m_drivetrain));
     SmartDashboard.putData(m_chooserAuto);
 
-    //m_chooserDrive.setDefaultOption("Drive Mode - Arcade", "Option1");
-    //m_chooserDrive.addOption("Drive Mode - Curvature", "Option 2");
-    //SmartDashboard.putData(m_chooserDrive);
   }
 
   /**
@@ -170,16 +172,27 @@ public class RobotContainer {
    *
    * @return the command to run in teleop
    */
-  public Command getArcadeDriveCommand() {
-    return new ArcadeDrive(
-        m_drivetrain, () -> -m_speedLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(1),0.1)),
-        () -> -m_rotLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(4),0.1)));
-  }
+  public Command getDriveCommand() {
 
-  public Command getCurvatureDriveCommand() {
-    return new CurvatureDrive(
-        m_drivetrain, () -> -m_speedLimiter.calculate(m_controller.getRawAxis(1)),
-        () -> -m_rotLimiter.calculate(m_controller.getRawAxis(4)));
+    switch(m_chooserDrive.getSelected()) {
+
+      case "tank":
+        return new TankDrive(
+            m_drivetrain, () -> -m_leftLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(1),0.1)),
+            () -> -m_rightLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(5),0.1)));
+
+      case "curve":
+        return new CurvatureDrive(
+            m_drivetrain, () -> -m_leftLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(1),0.1)),
+            () -> -m_rightLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(4),0.1)));
+
+      case "arcade":
+
+            default:
+        return new ArcadeDrive(
+            m_drivetrain, () -> -m_leftLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(1),0.1)),
+            () -> -m_rightLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(4),0.1)));
+    }
   }
 
   

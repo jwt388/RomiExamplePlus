@@ -12,4 +12,26 @@ package frc.robot;
  * <p>It is advised to statically import this class (or one of its inner classes) wherever the
  * constants are needed, to reduce verbosity.
  */
-public final class Constants {}
+public final class Constants {
+
+    // Romi device specific constants
+    public static final  double kMaxSpeed = 0.7; // meters per second
+    public static final  double kMaxAngularSpeed = 1.5 * 2 * Math.PI; // 1.5 rotation per second
+  
+    public static final  double kTrackWidth = 5.551*0.0254; // meters (5.551 inches)
+    public static final  double kWheelRadius = 0.07/2; // meters (d=2.75591 inches, 70 mm)
+    public static final  int kEncoderResolution = 1440;
+
+
+    // Heading stabilization constants
+    public static final  double kStabilizationP = 0.005;
+    public static final  double kStabilizationI = 0.0;
+    public static final  double kStabilizationD = 0.0;
+
+    // Turn to angle PID constants
+    public static final double kTurnP = 0.004;
+    public static final double kTurnI = 0.0;
+    public static final double kTurnD = 0.0;
+    public static final double kTurnToleranceDeg = 1.0;
+    public static final double kTurnRateToleranceDegPerS = 10.0;
+}
