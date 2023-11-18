@@ -7,17 +7,25 @@ package frc.robot.subsystems;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
+import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.wpilibj.BuiltInAccelerometer;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
-import edu.wpi.first.wpilibj.drive.DifferentialDrive.WheelSpeeds;
 import frc.robot.Constants;
+import frc.robot.commands.ResetOdometry;
 import frc.robot.sensors.RomiGyro;
 import edu.wpi.first.wpilibj.motorcontrol.Spark;
+/* import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab; */
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -25,8 +33,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 // Adapted from differentialdrivebot example
 
 public class Drivetrain extends SubsystemBase {
-
-
 
   // The Romi has the left and right motors set to
   // PWM channels 0 and 1 respectively
@@ -52,8 +58,7 @@ public class Drivetrain extends SubsystemBase {
   private final DifferentialDriveOdometry m_odometry;
   private Pose2d m_pose;
   private final Field2d m_field = new Field2d();
-
-
+  
   public static final double kS = 0.38069; // from Daltz333 example
   public static final double kV = 9.5975; //
 
@@ -62,6 +67,8 @@ public class Drivetrain extends SubsystemBase {
 
   // Set up the BuiltInAccelerometer
   private final BuiltInAccelerometer m_accelerometer = new BuiltInAccelerometer();
+
+  NetworkTableEntry m_headingEntry;
 
   /** Creates a new Drivetrain. */
   public Drivetrain() {
@@ -84,8 +91,7 @@ public class Drivetrain extends SubsystemBase {
     m_odometry = new DifferentialDriveOdometry(
         m_gyro.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
 
-    SmartDashboard.putData(m_diffDrive);
-    SmartDashboard.putData("Field", m_field);
+    setupShuffleboard();
 
   }
 
@@ -134,11 +140,11 @@ public class Drivetrain extends SubsystemBase {
   }
 
   /** Reset gyro and odometry to zero. */
-  public void resetOdometry() {
+  public void resetOdometry(Pose2d pose) {
     resetEncoders();
     m_gyro.reset();
-    m_odometry.update(
-        m_gyro.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
+    m_odometry.resetPosition(
+      m_gyro.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance(), pose);
   }
 
   public void arcadeDrive(double xaxisSpeed, double zaxisRotate, boolean squareInputs) {
@@ -227,7 +233,7 @@ public class Drivetrain extends SubsystemBase {
   }
 
   /**
-   * Current angle of the Romi around the Z-axis.
+   * Current angle of the Romi around the Z-axis (wraps at +/- 180).
    *
    * @return The current angle of the Romi in degrees
    */
@@ -235,6 +241,14 @@ public class Drivetrain extends SubsystemBase {
     return -Math.IEEEremainder(m_gyro.getAngleZ(), 360);
   }
 
+  /**
+   * Current angle of the Romi around the Z-axis (continuous at +/- 180).
+   *
+   * @return The current angle of the Romi in degrees
+   */
+  public double getHeading() {
+    return m_gyro.getRotation2d().getDegrees();
+  }
   /**
    * Rate of turn in degrees-per-second around the Z-axis.
    *
@@ -249,15 +263,28 @@ public class Drivetrain extends SubsystemBase {
     m_gyro.reset();
   }
 
-  @Override
-  public void periodic() {
+  private void setupShuffleboard() {
+    // Create a tab for the Drivetrain
+/*     ShuffleboardTab m_driveTab = Shuffleboard.getTab("Drivetrain");
+    m_driveTab
+        .add("Differential Drive", m_diffDrive); */
 
-    m_pose = m_odometry.update(
-        m_gyro.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
+    SmartDashboard.putData(m_diffDrive);
 
-    m_field.setRobotPose(m_odometry.getPoseMeters());
+    // Create a tab for the Odometry and Field
+/*     ShuffleboardTab m_fieldTab = Shuffleboard.getTab("Field");
+    m_fieldTab
+        .add("Field", m_field); */
+    SmartDashboard.putData(m_field);
 
-    // This method will be called once per scheduler run
+/*     ShuffleboardLayout commands = m_fieldTab.getLayout("Commands",BuiltInLayouts.kList);
+    commands.add(new InstantCommand (() ->  resetOdometry())); */
+    // SmartDashboard.putData(new InstantCommand (() ->  resetOdometry(new Pose2d(Constants.startX, Constants.startY, new Rotation2d())))); 
+    SmartDashboard.putData(new ResetOdometry(this));
+
+  } 
+
+  public void updateShuffleboard() {
     SmartDashboard.putNumber("Z Angle", getGyroAngleZ()); 
     SmartDashboard.putNumber("Z Rate", getGyroRateZ()); 
 
@@ -266,7 +293,21 @@ public class Drivetrain extends SubsystemBase {
     SmartDashboard.putNumber("Pose Y", m_pose.getY());
 
     SmartDashboard.putNumber("Left Rate", m_leftEncoder.getRate());
-    SmartDashboard.putNumber("RIght Rate", m_rightEncoder.getRate());
+    SmartDashboard.putNumber("Right Rate", m_rightEncoder.getRate());
+    SmartDashboard.putNumber("Speed", (m_leftEncoder.getRate() + m_rightEncoder.getRate())/2);
+
+  }
+
+  @Override
+  public void periodic() {
+    // This method will be called once per scheduler run
+
+    m_pose = m_odometry.update(
+        m_gyro.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
+
+    m_field.setRobotPose(m_odometry.getPoseMeters());
+
+    updateShuffleboard();
 
   }
 

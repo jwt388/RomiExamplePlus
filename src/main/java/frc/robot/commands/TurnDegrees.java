@@ -46,8 +46,6 @@ public class TurnDegrees extends CommandBase {
     m_drive.arcadeDrive(0, 0, false);
     m_drive.resetEncoders();
 
-    DataLogManager.log("Turn Distance: " + distanceToTravel);
-
   }
 
   // Called every time the scheduler runs while the command is scheduled.
@@ -74,9 +72,6 @@ public class TurnDegrees extends CommandBase {
   private double getAverageTurningDistance() {
     double leftDistance = Math.abs(m_drive.getLeftDistanceMeters());
     double rightDistance = Math.abs(m_drive.getRightDistanceMeters());
-
-    DataLogManager.log("Left: " + leftDistance + " Right: " + rightDistance);
-
     return (leftDistance + rightDistance) / 2.0;
   }
 }

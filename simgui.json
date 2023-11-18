@@ -16,9 +16,14 @@
   "NTProvider": {
     "types": {
       "/FMSInfo": "FMSInfo",
+      "/Shuffleboard/Drivetrain/Differential Drive": "DifferentialDrive",
+      "/Shuffleboard/Field/Commands/InstantCommand": "Command",
+      "/Shuffleboard/Field/Field": "Field2d",
       "/SmartDashboard/DifferentialDrive[1]": "DifferentialDrive",
       "/SmartDashboard/Drivetrain": "Subsystem",
       "/SmartDashboard/Field": "Field2d",
+      "/SmartDashboard/InstantCommand": "Command",
+      "/SmartDashboard/ResetOdometry": "Command",
       "/SmartDashboard/Scheduler": "Scheduler",
       "/SmartDashboard/SendableChooser[0]": "String Chooser",
       "/SmartDashboard/SendableChooser[1]": "String Chooser"
@@ -39,6 +44,9 @@
     "transitory": {
       "SmartDashboard": {
         "DifferentialDrive[1]": {
+          "open": true
+        },
+        "InstantCommand": {
           "open": true
         },
         "open": true

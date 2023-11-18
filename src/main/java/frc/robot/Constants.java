@@ -22,6 +22,9 @@ public final class Constants {
     public static final  double kWheelRadius = 0.07/2; // meters (d=2.75591 inches, 70 mm)
     public static final  int kEncoderResolution = 1440;
 
+    // Starting field position for odometry
+    public static final double startX = 1.7;
+    public static final double startY = 1.0;
 
     // Heading stabilization constants
     public static final  double kStabilizationP = 0.005;

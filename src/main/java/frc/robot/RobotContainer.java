@@ -7,6 +7,8 @@ package frc.robot;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.GenericHID;
 //import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
@@ -147,7 +149,8 @@ public class RobotContainer {
 
     // Reset gyro and odometry when 'A' button of the contoroller is pressed
     aButton
-      .onTrue(new InstantCommand(() -> m_drivetrain.resetOdometry() ));
+    .onTrue(new ResetOdometry(m_drivetrain));
+      // .onTrue(new InstantCommand(() -> m_drivetrain.resetOdometry(new Pose2d(Constants.startX, Constants.startY, new Rotation2d())) ));
 
     // Setup SmartDashboard options
     m_chooserAuto.setDefaultOption("Auto Routine Distance", new AutonomousDistance(m_drivetrain));
