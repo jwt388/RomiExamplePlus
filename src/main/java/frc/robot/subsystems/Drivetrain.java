@@ -7,12 +7,11 @@ package frc.robot.subsystems;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
-import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj.BuiltInAccelerometer;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
@@ -20,12 +19,9 @@ import frc.robot.Constants;
 import frc.robot.commands.ResetOdometry;
 import frc.robot.sensors.RomiGyro;
 import edu.wpi.first.wpilibj.motorcontrol.Spark;
-/* import edu.wpi.first.wpilibj.shuffleboard.BuiltInLayouts;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
-import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardLayout;
-import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab; */
-import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -68,7 +64,13 @@ public class Drivetrain extends SubsystemBase {
   // Set up the BuiltInAccelerometer
   private final BuiltInAccelerometer m_accelerometer = new BuiltInAccelerometer();
 
-  NetworkTableEntry m_headingEntry;
+    // Used to put telemetry data onto Shuffleboard
+    GenericEntry m_headingEntry, m_avgDistanceEntry, m_speedEntry;
+    GenericEntry m_leftWheelSpeedsEntry, m_rightWheelSpeedsEntry;
+    GenericEntry m_leftWheelPositionEntry, m_rightWheelPositionEntry;
+    GenericEntry m_distanceP, m_distanceD, m_distanceI, m_distanceV, m_distanceA;
+    GenericEntry m_driveProfiledP, m_driveProfiledD, m_driveProfiledI;
+    GenericEntry m_angleI, m_angleP, m_angleD;
 
   /** Creates a new Drivetrain. */
   public Drivetrain() {
@@ -264,27 +266,89 @@ public class Drivetrain extends SubsystemBase {
   }
 
   private void setupShuffleboard() {
-    // Create a tab for the Drivetrain
-/*     ShuffleboardTab m_driveTab = Shuffleboard.getTab("Drivetrain");
-    m_driveTab
-        .add("Differential Drive", m_diffDrive); */
 
     SmartDashboard.putData(m_diffDrive);
+    SmartDashboard.putData(new ResetOdometry(this));
 
+
+    // Create a tab for the distance PID tuning if enabled
+    if (Constants.enableDistanceTune) {
+      ShuffleboardTab m_tuneTab = Shuffleboard.getTab("PID Tuning");
+
+      m_avgDistanceEntry = m_tuneTab.add("Distance (m)", getAverageDistanceMeters())
+          .withWidget(BuiltInWidgets.kGraph)      
+          .withSize(4,3)
+          .withPosition(5, 0)
+          .getEntry();
+
+      m_speedEntry = m_tuneTab.add("Speed (m)", (m_leftEncoder.getRate() + m_rightEncoder.getRate())/2)
+          .withWidget(BuiltInWidgets.kGraph)      
+          .withSize(4,3)
+          .withPosition(1, 0)
+          .getEntry();
+
+      // Add PID tuning parameters 
+      m_distanceP = m_tuneTab.add("kP-Dist", Constants.kPDriveProfiled)
+      .withPosition(0, 0)
+      .getEntry();
+
+      m_distanceI = m_tuneTab.add("kI-Dist", Constants.kIDriveProfiled)
+      .withPosition(0, 1)
+      .getEntry();
+
+      m_distanceD = m_tuneTab.add("kD-Dist", Constants.kDDriveProfiled)
+      .withPosition(0, 2)
+      .getEntry();
+
+      m_distanceV = m_tuneTab.add("Vmx-Dist", Constants.kMaxSpeedMetersPerSecond)
+      .withPosition(0, 3)
+      .getEntry();
+
+      m_distanceA = m_tuneTab.add("Amx-Dist", Constants.kMaxAccelMetersPerSecondSquared)
+      .withPosition(0, 4)
+      .getEntry();
+
+    }
+
+    // Create a tab for the distance PID tuning if enabled
+    if (Constants.enableAngleTune) {
+      ShuffleboardTab m_tuneTab = Shuffleboard.getTab("PID Tuning");
+
+      // Add telemetry data to the tab
+      m_headingEntry = m_tuneTab.add("Heading Deg.", getHeading())
+          .withWidget(BuiltInWidgets.kGraph)      
+          .withSize(4,3)
+          .withPosition(3, 0)
+          .getEntry();
+
+      // Add PID tuning parameters 
+      m_angleP = m_tuneTab.add("kP-Angle", Constants.kPTurn)
+      .withPosition(0, 0)
+      .getEntry();
+
+      m_angleI = m_tuneTab.add("kI-Angle", Constants.kITurn)
+      .withPosition(0, 1)
+      .getEntry();
+
+      m_angleD = m_tuneTab.add("kD-Angle", Constants.kDTurn)
+      .withPosition(0, 2)
+      .getEntry();
+      
+    }
+    
     // Create a tab for the Odometry and Field
 /*     ShuffleboardTab m_fieldTab = Shuffleboard.getTab("Field");
     m_fieldTab
-        .add("Field", m_field); */
+        .add("Field", m_field);
     SmartDashboard.putData(m_field);
 
-/*     ShuffleboardLayout commands = m_fieldTab.getLayout("Commands",BuiltInLayouts.kList);
+    ShuffleboardLayout commands = m_fieldTab.getLayout("Commands",BuiltInLayouts.kList);
     commands.add(new InstantCommand (() ->  resetOdometry())); */
-    // SmartDashboard.putData(new InstantCommand (() ->  resetOdometry(new Pose2d(Constants.startX, Constants.startY, new Rotation2d())))); 
-    SmartDashboard.putData(new ResetOdometry(this));
 
   } 
 
   public void updateShuffleboard() {
+
     SmartDashboard.putNumber("Z Angle", getGyroAngleZ()); 
     SmartDashboard.putNumber("Z Rate", getGyroRateZ()); 
 
@@ -295,6 +359,20 @@ public class Drivetrain extends SubsystemBase {
     SmartDashboard.putNumber("Left Rate", m_leftEncoder.getRate());
     SmartDashboard.putNumber("Right Rate", m_rightEncoder.getRate());
     SmartDashboard.putNumber("Speed", (m_leftEncoder.getRate() + m_rightEncoder.getRate())/2);
+
+    // Update tuning debug if enabled
+    if (Constants.enableDistanceTune) {
+
+      m_avgDistanceEntry.setDouble(getAverageDistanceMeters());
+      m_speedEntry.setDouble((m_leftEncoder.getRate() + m_rightEncoder.getRate())/2);
+
+    }
+
+    if (Constants.enableAngleTune) {
+
+      m_avgDistanceEntry.setDouble(getAverageDistanceMeters());
+
+    }
 
   }
 

@@ -7,8 +7,6 @@ package frc.robot;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.GenericHID;
 //import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
@@ -20,6 +18,7 @@ import frc.robot.commands.CurvatureDrive;
 import frc.robot.commands.AutonomousDistance;
 import frc.robot.commands.AutonomousTime;
 import frc.robot.commands.DriveBox;
+import frc.robot.commands.DriveDistanceProfiledPID;
 import frc.robot.commands.ResetOdometry;
 import frc.robot.commands.TankDrive;
 import frc.robot.commands.DriveArcDistance;
@@ -32,7 +31,6 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.PIDCommand;
-import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 /**
@@ -114,7 +112,7 @@ public class RobotContainer {
     new JoystickButton(m_controller, Button.kLeftBumper.value)
       .whileTrue(
         new PIDCommand(
-          new PIDController(Constants.kStabilizationP, Constants.kStabilizationI, Constants.kStabilizationD), 
+          new PIDController(Constants.kPStabilization, Constants.kIStabilization, Constants.kDStabilization), 
           // Close the loop on turn rate
           m_drivetrain::getGyroRateZ,
           // Set point is 0 deg/sec
@@ -154,9 +152,11 @@ public class RobotContainer {
 
     // Setup SmartDashboard options
     m_chooserAuto.setDefaultOption("Auto Routine Distance", new AutonomousDistance(m_drivetrain));
+    m_chooserAuto.setDefaultOption("Auto Routine Time", new AutonomousTime(m_drivetrain));
     m_chooserAuto.addOption("Auto Routine Turn to 0", new TurnToAngle(0, m_drivetrain));
     m_chooserAuto.addOption("Auto Routine Box", new DriveBox(m_drivetrain));
     m_chooserAuto.addOption("Auto Routine ArcDistance", new DriveArcDistance(0.5, 25.0, 0.25, m_drivetrain));
+    m_chooserAuto.addOption("Profiled Distance PID", new DriveDistanceProfiledPID(1, m_drivetrain));
     SmartDashboard.putData(m_chooserAuto);
 
   }

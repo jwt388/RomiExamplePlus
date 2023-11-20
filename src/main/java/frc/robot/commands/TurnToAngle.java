@@ -7,6 +7,8 @@ package frc.robot.commands;
 import frc.robot.Constants;
 import frc.robot.subsystems.Drivetrain;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj2.command.PIDCommand;
 
 // Based on gyrodrivecommands example
@@ -14,27 +16,28 @@ import edu.wpi.first.wpilibj2.command.PIDCommand;
 /** A command that will turn the robot to the specified angle. */
 public class TurnToAngle extends PIDCommand {
   /**
-   * Turns to robot to the specified angle.
+   * Turns to robot to the specified angle using PID feedback control.
    *
    * @param targetAngleDegrees The angle to turn to
-   * @param drive The drive subsystem to use
+   * @param drivetrain The drive subsystem to use
    */
   private final Drivetrain m_drivetrain;
+  private static NetworkTableInstance inst = NetworkTableInstance.getDefault();
+  private static NetworkTable m_table;
 
-
-  public TurnToAngle(double targetAngleDegrees, Drivetrain drive) {
+  public TurnToAngle(double targetAngleDegrees, Drivetrain drivetrain) {
     super(
-        new PIDController(Constants.kTurnP, Constants.kTurnI, Constants.kTurnD),
+        new PIDController(Constants.kPTurn, Constants.kITurn, Constants.kDTurn),
         // Close loop on heading
-        drive::getGyroAngleZ,
+        drivetrain::getGyroAngleZ,
         // Set reference to target
         targetAngleDegrees,
         // Pipe output to turn robot
-        output -> drive.arcadeDrive(0, output, false),
+        output -> drivetrain.arcadeDrive(0, output, false),
         // Require the drive
-        drive);
+        drivetrain);
 
-    m_drivetrain = drive;
+    m_drivetrain = drivetrain;
 
     // Set the controller to be continuous (because it is an angle controller)
     getController().enableContinuousInput(-180, 180);
@@ -48,6 +51,13 @@ public class TurnToAngle extends PIDCommand {
   @Override
   public void initialize() {
     m_drivetrain.arcadeDrive(0, 0, false);
+        // Override PID parameters from Shuffleboard
+        if (Constants.enableAngleTune) {
+          m_table = inst.getTable("Shuffleboard/PID Tuning");
+          getController().setP(m_table.getEntry("kP-Angle").getDouble(Constants.kPTurn));
+          getController().setI(m_table.getEntry("kI-Angle").getDouble(Constants.kITurn));
+          getController().setD(m_table.getEntry("kD-Angle").getDouble(Constants.kDTurn));
+        }
   }
 
   @Override

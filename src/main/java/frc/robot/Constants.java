@@ -27,14 +27,27 @@ public final class Constants {
     public static final double startY = 1.0;
 
     // Heading stabilization constants
-    public static final  double kStabilizationP = 0.005;
-    public static final  double kStabilizationI = 0.0;
-    public static final  double kStabilizationD = 0.0;
+    public static final  double kPStabilization = 0.005;
+    public static final  double kIStabilization = 0.0;
+    public static final  double kDStabilization = 0.0;
 
     // Turn to angle PID constants
-    public static final double kTurnP = 0.004;
-    public static final double kTurnI = 0.0;
-    public static final double kTurnD = 0.0;
+    public static final double kPTurn = 0.004;
+    public static final double kITurn = 0.0;
+    public static final double kDTurn = 0.0;
     public static final double kTurnToleranceDeg = 1.0;
     public static final double kTurnRateToleranceDegPerS = 10.0;
+
+    // For profiled distances PID
+    public static final double kPDriveProfiled = 1.2;
+    public static final double kIDriveProfiled = 0.0;
+    public static final double kDDriveProfiled = 0.0;
+    // Max speed and acceleration of the robot
+    public static final double kMaxSpeedMetersPerSecond = 0.5;
+    public static final double kMaxAccelMetersPerSecondSquared = 1;
+
+    // Debug and tuning enable/disable
+    public static final boolean enableDistanceTune = true;
+    public static final boolean enableAngleTune = false;
+
 }
