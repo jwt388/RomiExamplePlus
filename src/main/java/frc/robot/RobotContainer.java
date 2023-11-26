@@ -18,6 +18,7 @@ import frc.robot.commands.CurvatureDrive;
 import frc.robot.commands.AutonomousDistance;
 import frc.robot.commands.AutonomousTime;
 import frc.robot.commands.DriveBox;
+import frc.robot.commands.DriveDistancePID;
 import frc.robot.commands.DriveDistanceProfiledPID;
 import frc.robot.commands.ResetOdometry;
 import frc.robot.commands.TankDrive;
@@ -31,6 +32,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.PIDCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 /**
@@ -93,6 +95,8 @@ public class RobotContainer {
     m_chooserDrive.setDefaultOption("Drive Mode - Arcade", "arcade");
     m_chooserDrive.addOption("Drive Mode - Tank", "tank");
     m_chooserDrive.addOption("Drive Mode - Curvature", "curve");
+    m_chooserDrive.addOption("Drive Mode - Curve+Zero", "curveZero");
+    
     SmartDashboard.putData(m_chooserDrive);
 
     // Default command is manual drive. This will run unless another command
@@ -155,7 +159,8 @@ public class RobotContainer {
     m_chooserAuto.setDefaultOption("Auto Routine Time", new AutonomousTime(m_drivetrain));
     m_chooserAuto.addOption("Auto Routine Turn to 0", new TurnToAngle(0, m_drivetrain));
     m_chooserAuto.addOption("Auto Routine Box", new DriveBox(m_drivetrain));
-    m_chooserAuto.addOption("Auto Routine ArcDistance", new DriveArcDistance(0.5, 25.0, 0.25, m_drivetrain));
+    m_chooserAuto.addOption("Auto Routine ArcDistance", new DriveArcDistance(0.5,1.0, 0.1, m_drivetrain));
+    m_chooserAuto.addOption("Distance PID", new DriveDistancePID(1, m_drivetrain));
     m_chooserAuto.addOption("Profiled Distance PID", new DriveDistanceProfiledPID(1, m_drivetrain));
     SmartDashboard.putData(m_chooserAuto);
 
@@ -187,11 +192,15 @@ public class RobotContainer {
       case "curve":
         return new CurvatureDrive(
             m_drivetrain, () -> -m_leftLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(1),0.1)),
-            () -> -m_rightLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(4),0.1)));
+            () -> -m_rightLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(4),0.1)), false);
+
+      case "curveZero":
+        return new CurvatureDrive(
+            m_drivetrain, () -> -m_leftLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(1),0.1)),
+            () -> -m_rightLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(4),0.1)), true);
 
       case "arcade":
-
-            default:
+      default:
         return new ArcadeDrive(
             m_drivetrain, () -> -m_leftLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(1),0.1)),
             () -> -m_rightLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(4),0.1)));

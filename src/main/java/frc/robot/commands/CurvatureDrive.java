@@ -12,6 +12,7 @@ public class CurvatureDrive extends CommandBase {
   private final Drivetrain m_drivetrain;
   private final Supplier<Double> m_xaxisSpeedSupplier;
   private final Supplier<Double> m_zaxisRotateSupplier;
+  private final Boolean m_allowTurnInPlace;
 
   /**
    * Creates a new ArcadeDrive. This command will drive your robot according to the speed supplier
@@ -24,10 +25,12 @@ public class CurvatureDrive extends CommandBase {
   public CurvatureDrive(
       Drivetrain drivetrain,
       Supplier<Double> xaxisSpeedSupplier,
-      Supplier<Double> zaxisRotateSupplier) {
+      Supplier<Double> zaxisRotateSupplier,
+      Boolean allowTurnInPlace) {
     m_drivetrain = drivetrain;
     m_xaxisSpeedSupplier = xaxisSpeedSupplier;
     m_zaxisRotateSupplier = zaxisRotateSupplier;
+    m_allowTurnInPlace = allowTurnInPlace;
     addRequirements(drivetrain);
   }
 
@@ -38,7 +41,7 @@ public class CurvatureDrive extends CommandBase {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    m_drivetrain.curvatureDrive(m_xaxisSpeedSupplier.get(), m_zaxisRotateSupplier.get(), false);
+    m_drivetrain.curvatureDrive(m_xaxisSpeedSupplier.get(), m_zaxisRotateSupplier.get(), m_allowTurnInPlace);
   }
 
   // Called once the command ends or is interrupted.

@@ -49,6 +49,9 @@
         "InstantCommand": {
           "open": true
         },
+        "ResetOdometry": {
+          "open": true
+        },
         "open": true
       }
     }

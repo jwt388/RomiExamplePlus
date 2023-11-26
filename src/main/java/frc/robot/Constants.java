@@ -38,6 +38,11 @@ public final class Constants {
     public static final double kTurnToleranceDeg = 1.0;
     public static final double kTurnRateToleranceDegPerS = 10.0;
 
+    // For distances PID
+    public static final double kPDrivePID = 1.2;
+    public static final double kIDrivePID = 0.2;
+    public static final double kDDrivePID = 0;
+
     // For profiled distances PID
     public static final double kPDriveProfiled = 1.2;
     public static final double kIDriveProfiled = 0.0;
