@@ -14,17 +14,14 @@ package frc.robot;
  */
 public final class Constants {
 
-    // Romi device specific constants
-    public static final  double kMaxSpeed = 0.7; // meters per second
-    public static final  double kMaxAngularSpeed = 1.5 * 2 * Math.PI; // 1.5 rotation per second
-  
+    // Romi device specific constants 
     public static final  double kTrackWidth = 5.551*0.0254; // meters (5.551 inches)
     public static final  double kWheelRadius = 0.07/2; // meters (d=2.75591 inches, 70 mm)
     public static final  int kEncoderResolution = 1440;
 
     // Starting field position for odometry
-    public static final double startX = 1.7;
-    public static final double startY = 1.0;
+    public static final double startX = 1.6;
+    public static final double startY = 4.7;
 
     // Heading stabilization constants
     public static final  double kPStabilization = 0.005;
@@ -47,12 +44,23 @@ public final class Constants {
     public static final double kPDriveProfiled = 1.2;
     public static final double kIDriveProfiled = 0.0;
     public static final double kDDriveProfiled = 0.0;
+
     // Max speed and acceleration of the robot
     public static final double kMaxSpeedMetersPerSecond = 0.5;
-    public static final double kMaxAccelMetersPerSecondSquared = 1;
+    public static final double kMaxAccelMetersPerSecondSquared = 1.0;
 
     // Debug and tuning enable/disable
     public static final boolean enableDistanceTune = true;
     public static final boolean enableAngleTune = false;
+
+    public static final double ksVolts = 0.2;
+    public static final double kvVoltSecondsPerMeter = 8.0;
+    public static final double kaVoltSecondsSquaredPerMeter = 0.2;
+    public static final double kPDriveVel = 4.0;
+
+    // Reasonable baseline values for a RAMSETE follower in units of meters and seconds
+    public static final double kRamseteB = 2;
+    public static final double kRamseteZeta = 0.7;
+
 
 }

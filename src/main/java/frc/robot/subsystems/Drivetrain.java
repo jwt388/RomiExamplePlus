@@ -7,10 +7,12 @@ package frc.robot.subsystems;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
+import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj.BuiltInAccelerometer;
 import edu.wpi.first.wpilibj.Encoder;
@@ -64,13 +66,13 @@ public class Drivetrain extends SubsystemBase {
   // Set up the BuiltInAccelerometer
   private final BuiltInAccelerometer m_accelerometer = new BuiltInAccelerometer();
 
-    // Used to put telemetry data onto Shuffleboard
-    GenericEntry m_headingEntry, m_avgDistanceEntry, m_speedEntry;
-    GenericEntry m_leftWheelSpeedsEntry, m_rightWheelSpeedsEntry;
-    GenericEntry m_leftWheelPositionEntry, m_rightWheelPositionEntry;
-    GenericEntry m_distanceP, m_distanceD, m_distanceI, m_distanceV, m_distanceA;
-    GenericEntry m_driveProfiledP, m_driveProfiledD, m_driveProfiledI;
-    GenericEntry m_angleI, m_angleP, m_angleD;
+  // Used to put telemetry data onto Shuffleboard
+  GenericEntry m_headingEntry, m_avgDistanceEntry, m_speedEntry;
+  GenericEntry m_leftWheelSpeedsEntry, m_rightWheelSpeedsEntry;
+  GenericEntry m_leftWheelPositionEntry, m_rightWheelPositionEntry;
+  GenericEntry m_distanceP, m_distanceD, m_distanceI, m_distanceV, m_distanceA;
+  GenericEntry m_driveProfiledP, m_driveProfiledD, m_driveProfiledI;
+  GenericEntry m_angleI, m_angleP, m_angleD;
 
   /** Creates a new Drivetrain. */
   public Drivetrain() {
@@ -93,10 +95,26 @@ public class Drivetrain extends SubsystemBase {
     m_odometry = new DifferentialDriveOdometry(
         m_gyro.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
 
+    // Set starting pose
+    resetOdometry(new Pose2d(Constants.startX, Constants.startY, new Rotation2d()));
+
     setupShuffleboard();
 
   }
 
+  @Override
+  public void periodic() {
+    // This method will be called once per scheduler run
+
+    m_pose = m_odometry.update(
+        m_gyro.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
+
+    m_field.setRobotPose(m_odometry.getPoseMeters());
+    SmartDashboard.putData(m_field);
+
+    updateShuffleboard();
+
+  }
     /**
    * Sets the desired wheel speeds.
    *
@@ -105,11 +123,6 @@ public class Drivetrain extends SubsystemBase {
   public void setSpeeds(DifferentialDriveWheelSpeeds speeds) {
     final double leftFeedforward = m_feedforward.calculate(speeds.leftMetersPerSecond);
     final double rightFeedforward = m_feedforward.calculate(speeds.rightMetersPerSecond);
-
-    /*final double leftOutput =
-        m_leftPIDController.calculate(m_leftEncoder.getRate(), speeds.leftMetersPerSecond);
-    final double rightOutput =
-        m_rightPIDController.calculate(m_rightEncoder.getRate(), speeds.rightMetersPerSecond); */
 
     final double leftOutput =
         m_leftPIDController.calculate(0.1, speeds.leftMetersPerSecond);
@@ -152,12 +165,43 @@ public class Drivetrain extends SubsystemBase {
   public void arcadeDrive(double xaxisSpeed, double zaxisRotate, boolean squareInputs) {
     m_diffDrive.arcadeDrive(xaxisSpeed, zaxisRotate, squareInputs);
   } 
+
   public void tankDrive(double leftSpeed, double rightRotate) {
     m_diffDrive.tankDrive(leftSpeed, rightRotate, true);
   } 
 
+    /**
+   * Controls the left and right sides of the drive directly with voltages.
+   *
+   * @param leftVolts the commanded left output
+   * @param rightVolts the commanded right output
+   */
+  public void tankDriveVolts(double leftVolts, double rightVolts) {
+    m_leftMotor.setVoltage(leftVolts);
+    m_rightMotor.setVoltage(rightVolts);
+    m_diffDrive.feed();
+  }
+
   public void curvatureDrive(double xaxisSpeed, double zaxisRotate, boolean allowTurnInPlace) {
     m_diffDrive.curvatureDrive(xaxisSpeed, zaxisRotate, allowTurnInPlace);
+  }
+
+  /**
+   * Returns the currently-estimated pose of the robot.
+   *
+   * @return The pose.
+   */
+  public Pose2d getPose() {
+    return m_odometry.getPoseMeters();
+  }
+
+  /**
+   * Returns the current wheel speeds of the robot.
+   *
+   * @return The current wheel speeds.
+   */
+  public DifferentialDriveWheelSpeeds getWheelSpeeds() {
+    return new DifferentialDriveWheelSpeeds(m_leftEncoder.getRate(), m_rightEncoder.getRate());
   }
 
   public void resetEncoders() {
@@ -251,6 +295,7 @@ public class Drivetrain extends SubsystemBase {
   public double getHeading() {
     return m_gyro.getRotation2d().getDegrees();
   }
+
   /**
    * Rate of turn in degrees-per-second around the Z-axis.
    *
@@ -335,15 +380,6 @@ public class Drivetrain extends SubsystemBase {
       .getEntry();
       
     }
-    
-    // Create a tab for the Odometry and Field
-/*     ShuffleboardTab m_fieldTab = Shuffleboard.getTab("Field");
-    m_fieldTab
-        .add("Field", m_field);
-    SmartDashboard.putData(m_field);
-
-    ShuffleboardLayout commands = m_fieldTab.getLayout("Commands",BuiltInLayouts.kList);
-    commands.add(new InstantCommand (() ->  resetOdometry())); */
 
   } 
 
@@ -380,17 +416,8 @@ public class Drivetrain extends SubsystemBase {
 
   }
 
-  @Override
-  public void periodic() {
-    // This method will be called once per scheduler run
-
-    m_pose = m_odometry.update(
-        m_gyro.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
-
-    m_field.setRobotPose(m_odometry.getPoseMeters());
-
-    updateShuffleboard();
-
+  public void showTrajectory (Trajectory trajectory) {
+    m_field.getObject("traj").setTrajectory(trajectory);
   }
 
 }

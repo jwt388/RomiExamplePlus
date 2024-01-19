@@ -41,6 +41,7 @@
 
 # Log file
 *.log
+*.wpilog
 
 # BlueJ files
 *.ctxt
@@ -170,10 +171,5 @@ out/
 
 # Simulation GUI and other tools window save file
 *-window.json
-networktables.json
-networktables.json.bck
-networktables.json
-simgui-ds.json
-simgui-ds.json
-simgui.json
+simgui*
 networktables.json

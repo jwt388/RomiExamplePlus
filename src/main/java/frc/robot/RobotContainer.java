@@ -23,6 +23,7 @@ import frc.robot.commands.ResetOdometry;
 import frc.robot.commands.TankDrive;
 import frc.robot.commands.DriveArcDistance;
 import frc.robot.commands.TurnToAngle;
+import frc.robot.commands.pathCommands;
 import frc.robot.subsystems.Drivetrain;
 import frc.robot.subsystems.OnBoardIO;
 import frc.robot.subsystems.OnBoardIO.ChannelMode;
@@ -157,12 +158,12 @@ public class RobotContainer {
 
     // Setup SmartDashboard options
     m_chooserAuto.setDefaultOption("Auto Routine Distance", new AutonomousDistance(m_drivetrain));
-    m_chooserAuto.setDefaultOption("Auto Routine Time", new AutonomousTime(m_drivetrain));
     m_chooserAuto.addOption("Auto Routine Turn to 0", new TurnToAngle(0, m_drivetrain));
     m_chooserAuto.addOption("Auto Routine Box", new DriveBox(m_drivetrain));
-    m_chooserAuto.addOption("Auto Routine ArcDistance", new DriveArcDistance(0.5, 25.0, 0.25, m_drivetrain));
     m_chooserAuto.addOption("Distance PID", new DriveDistancePID(1, m_drivetrain));
     m_chooserAuto.addOption("Profiled Distance PID", new DriveDistanceProfiledPID(1, m_drivetrain));
+    m_chooserAuto.addOption("Ramsete Manual S",  pathCommands.getRamseteManual(m_drivetrain));
+    m_chooserAuto.addOption("Ramsete from File",  pathCommands.getRamseteFromFile(m_drivetrain));
     SmartDashboard.putData(m_chooserAuto);
 
   }
@@ -173,7 +174,8 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    return m_chooserAuto.getSelected();
+    return pathCommands.getRamseteFromFile(m_drivetrain);
+    // return m_chooserAuto.getSelected();
   }
 
   /**

@@ -51,6 +51,7 @@ public class DriveDistanceProfiledPID extends ProfiledPIDCommand {
     getController().setTolerance(0.05, 0.06);
   }
 
+  @Override
   public void initialize() {
     super.initialize();
 
