@@ -23,8 +23,7 @@ import frc.robot.commands.TurnToAngle;
 import frc.robot.commands.ramseteTrajectory;
 import frc.robot.commands.pathCommands;
 import frc.robot.subsystems.Drivetrain;
-import edu.wpi.first.wpilibj.romi.OnBoardIO;
-import edu.wpi.first.wpilibj.romi.OnBoardIO.ChannelMode;
+import frc.robot.subsystems.RomiLights;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -42,7 +41,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final Drivetrain m_drivetrain = new Drivetrain();
-  private final OnBoardIO m_onboardIO = new OnBoardIO(ChannelMode.OUTPUT, ChannelMode.OUTPUT); // Enable LEDs
+  public final RomiLights m_romiLights = new RomiLights();
 
   // Assumes a gamepad plugged into channel 0
 
@@ -73,9 +72,6 @@ public class RobotContainer {
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
-
-    m_onboardIO.setGreenLed(false);
-    m_onboardIO.setRedLed(false);
     
     // Configure the button bindings
     configureButtonBindings();
@@ -133,9 +129,6 @@ public class RobotContainer {
     // Turn to -90 degrees when the 'B' button is pressed, with a 5 second timeout
     new JoystickButton(m_controller, Button.kB.value)
         .onTrue(new TurnToAngle(-90, m_drivetrain).withTimeout(5));
-
-    m_onboardIO.setRedLed(false);
-    m_onboardIO.setGreenLed(false);
 
     // Setup triggers for controller buttons
     Trigger aButton = new JoystickButton(m_controller, XboxController.Button.kA.value);

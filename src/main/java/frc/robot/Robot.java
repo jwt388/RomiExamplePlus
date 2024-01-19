@@ -38,6 +38,8 @@ public class Robot extends TimedRobot {
     DriverStation.startDataLog(DataLogManager.getLog());
 
     DataLogManager.log("Robot Init - Hello World");
+
+    m_robotContainer.m_romiLights.disableBlink();
   }
 
   /**
@@ -57,12 +59,14 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Left Joystick", -RobotContainer.m_controller.getRawAxis(1));
     SmartDashboard.putNumber("Right Joystick", -RobotContainer.m_controller.getRawAxis(4));
 
-    //SmartDashboard.putData(CommandScheduler.getInstance());
   }
 
   /** This function is called once each time the robot enters Disabled mode. */
   @Override
-  public void disabledInit() {}
+  public void disabledInit() {
+    m_robotContainer.m_romiLights.disableBlink();
+    m_robotContainer.m_romiLights.setGreen(false);
+  }
 
   @Override
   public void disabledPeriodic() {}
@@ -77,6 +81,10 @@ public class Robot extends TimedRobot {
     if (m_autonomousCommand != null) {
       m_autonomousCommand.schedule();
     }
+
+    m_robotContainer.m_romiLights.enableBlink();
+    m_robotContainer.m_romiLights.setGreen(true);
+
   }
 
   /** This function is called periodically during autonomous. */
@@ -100,6 +108,10 @@ public class Robot extends TimedRobot {
     if (m_driveCommand != null) {
       m_driveCommand.schedule();
     }
+
+    m_robotContainer.m_romiLights.enableBlink();
+    m_robotContainer.m_romiLights.setGreen(false);
+
   }
 
   /** This function is called periodically during operator control. */
@@ -110,6 +122,9 @@ public class Robot extends TimedRobot {
   public void testInit() {
     // Cancels all running commands at the start of test mode.
     CommandScheduler.getInstance().cancelAll();
+
+    m_robotContainer.m_romiLights.disableBlink();
+
   }
 
   /** This function is called periodically during test mode. */
