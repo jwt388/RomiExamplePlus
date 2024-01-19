@@ -147,7 +147,7 @@ public class RobotContainer {
     m_chooserAuto.addOption("Auto Routine Turn to 0", new TurnToAngle(0, m_drivetrain));
     m_chooserAuto.addOption("Auto Routine Box", new DriveBox(m_drivetrain));
     m_chooserAuto.addOption("Distance PID", new DriveDistancePID(1, m_drivetrain));
-    m_chooserAuto.addOption("Profiled Distance PID", new DriveDistanceProfiledPID(1, m_drivetrain));
+    m_chooserAuto.addOption("Profiled Distance PID", new DriveDistanceProfiledPID(2, m_drivetrain));
     m_chooserAuto.addOption("Ramsete Manual S",  new ramseteTrajectory(m_drivetrain, 
                                   pathCommands.getManualTrajectory()));
     m_chooserAuto.addOption("Ramsete from File",  new ramseteTrajectory(m_drivetrain, 

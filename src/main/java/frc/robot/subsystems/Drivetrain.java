@@ -16,6 +16,7 @@ import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj.BuiltInAccelerometer;
 import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import frc.robot.Constants;
 import frc.robot.commands.ResetOdometry;
@@ -310,10 +311,28 @@ public class Drivetrain extends SubsystemBase {
     SmartDashboard.putData(m_diffDrive);
     SmartDashboard.putData(new ResetOdometry(this));
 
+    // Below are examples of three methods to put values on a dashboard that can be modified
+    // at runtime to tune the controller. This feature is enabled by setting flags in the
+    // Constants file
 
-    // Create a tab for the distance PID tuning if enabled
+    // Display parameters for angle PID tuning if enabled. Placement can be done manually at
+    // runtime or by loading the shuffleboard_angle_tune.json settings file in Shuffleboard.
+    // Example of publishing fields for a dashboard to display.  In the TurnToAngle commands
+    // the values are retrieved via SmartDashboard.getNumber.
+    if (Constants.enableAngleTune) {
+
+      // Add PID tuning parameters 
+      SmartDashboard.putNumber("kP-Angle", Constants.kPTurn);
+      SmartDashboard.putNumber("kI-Angle", Constants.kITurn);
+      SmartDashboard.putNumber("kD-Angle", Constants.kDTurn);
+
+    }
+
+    // Create a tab for the distance PID tuning parameters if enabled.
+    // Example of placing fields on Shuffleboard via software. In the Distance PID commands
+    // the values are retrieved from Network table entries. 
     if (Constants.enableDistanceTune) {
-      ShuffleboardTab m_tuneTab = Shuffleboard.getTab("PID Tuning");
+      ShuffleboardTab m_tuneTab = Shuffleboard.getTab("Dist PID Tune");
 
       m_avgDistanceEntry = m_tuneTab.add("Distance (m)", getAverageDistanceMeters())
           .withWidget(BuiltInWidgets.kGraph)      
@@ -350,32 +369,19 @@ public class Drivetrain extends SubsystemBase {
 
     }
 
-    // Create a tab for the distance PID tuning if enabled
-    if (Constants.enableAngleTune) {
-      ShuffleboardTab m_tuneTab = Shuffleboard.getTab("PID Tuning");
+    // Setup Preferences with key and default value for Profiled PID controller.
+    // Example of using preferences to modify values at runtime. In the Distance Profiled 
+    // PID command the values are retrieved from preferences using the same key. 
+    if (Constants.enableProfilePIDTune) {
 
-      // Add telemetry data to the tab
-      m_headingEntry = m_tuneTab.add("Heading Deg.", getHeading())
-          .withWidget(BuiltInWidgets.kGraph)      
-          .withSize(4,3)
-          .withPosition(3, 0)
-          .getEntry();
 
-      // Add PID tuning parameters 
-      m_angleP = m_tuneTab.add("kP-Angle", Constants.kPTurn)
-      .withPosition(0, 0)
-      .getEntry();
+      Preferences.initDouble(Constants.kPProfiledKey, Constants.kPDriveProfiled);
+      Preferences.initDouble(Constants.kIProfiledKey, Constants.kIDriveProfiled);
+      Preferences.initDouble(Constants.kDProfiledKey, Constants.kDDriveProfiled);
+      Preferences.initDouble(Constants.kVMaxProfiledKey, Constants.kMaxSpeedMetersPerSecond);
+      Preferences.initDouble(Constants.kAMaxProfiledKey, Constants.kMaxAccelMetersPerSecondSquared);
 
-      m_angleI = m_tuneTab.add("kI-Angle", Constants.kITurn)
-      .withPosition(0, 1)
-      .getEntry();
-
-      m_angleD = m_tuneTab.add("kD-Angle", Constants.kDTurn)
-      .withPosition(0, 2)
-      .getEntry();
-      
     }
-
   } 
 
   public void updateShuffleboard() {
@@ -400,12 +406,6 @@ public class Drivetrain extends SubsystemBase {
 
       m_avgDistanceEntry.setDouble(getAverageDistanceMeters());
       m_speedEntry.setDouble((m_leftEncoder.getRate() + m_rightEncoder.getRate())/2);
-
-    }
-
-    if (Constants.enableAngleTune) {
-
-      m_avgDistanceEntry.setDouble(getAverageDistanceMeters());
 
     }
 

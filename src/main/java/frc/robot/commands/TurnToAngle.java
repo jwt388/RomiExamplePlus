@@ -7,13 +7,14 @@ package frc.robot.commands;
 import frc.robot.Constants;
 import frc.robot.subsystems.Drivetrain;
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.networktables.NetworkTable;
-import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.PIDCommand;
 
 // Based on gyrodrivecommands example
 
-/** A command that will turn the robot to the specified angle. */
+/** A command that will turn the robot to the specified angle. 
+ *  Demonstrates use of 
+*/
 public class TurnToAngle extends PIDCommand {
   /**
    * Turns to robot to the specified angle using PID feedback control.
@@ -22,8 +23,6 @@ public class TurnToAngle extends PIDCommand {
    * @param drivetrain The drive subsystem to use
    */
   private final Drivetrain m_drivetrain;
-  private static NetworkTableInstance inst = NetworkTableInstance.getDefault();
-  private static NetworkTable m_table;
 
   public TurnToAngle(double targetAngleDegrees, Drivetrain drivetrain) {
     super(
@@ -51,13 +50,16 @@ public class TurnToAngle extends PIDCommand {
   @Override
   public void initialize() {
     m_drivetrain.arcadeDrive(0, 0, false);
-        // Override PID parameters from Shuffleboard
-        if (Constants.enableAngleTune) {
-          m_table = inst.getTable("Shuffleboard/PID Tuning");
-          getController().setP(m_table.getEntry("kP-Angle").getDouble(Constants.kPTurn));
-          getController().setI(m_table.getEntry("kI-Angle").getDouble(Constants.kITurn));
-          getController().setD(m_table.getEntry("kD-Angle").getDouble(Constants.kDTurn));
-        }
+
+    // Override PID parameters from Shuffleboard. Values are initialized in the drivetrain.
+    if (Constants.enableAngleTune) {
+
+      getController().setP(SmartDashboard.getNumber("kP-Angle", Constants.kPTurn));
+      getController().setI(SmartDashboard.getNumber("kI-Angle", Constants.kITurn));
+      getController().setD(SmartDashboard.getNumber("kD-Angle", Constants.kDTurn));
+
+    }
+
   }
 
   @Override
@@ -65,9 +67,10 @@ public class TurnToAngle extends PIDCommand {
     // End when the controller is at the reference.
     return getController().atSetpoint();
   }
-    // Called once the command ends or is interrupted.
-    @Override
-    public void end(boolean interrupted) {
-      m_drivetrain.arcadeDrive(0, 0, false);
-    }
+
+  // Called once the command ends or is interrupted.
+  @Override
+  public void end(boolean interrupted) {
+    m_drivetrain.arcadeDrive(0, 0, false);
+  }
 }

@@ -44,14 +44,22 @@ public final class Constants {
     public static final double kPDriveProfiled = 1.2;
     public static final double kIDriveProfiled = 0.0;
     public static final double kDDriveProfiled = 0.0;
-
     // Max speed and acceleration of the robot
     public static final double kMaxSpeedMetersPerSecond = 0.5;
     public static final double kMaxAccelMetersPerSecondSquared = 1.0;
 
+    public static final String kPProfiledKey = "kP-Dist";
+    public static final String kIProfiledKey = "kI-Dist";
+    public static final String kDProfiledKey = "kD-Dist";
+    public static final String kVMaxProfiledKey = "Vmax-Dist";
+    public static final String kAMaxProfiledKey = "Amax-Dist";
+
+
+
     // Debug and tuning enable/disable
-    public static final boolean enableDistanceTune = true;
+    public static final boolean enableDistanceTune = false;
     public static final boolean enableAngleTune = false;
+    public static final boolean enableProfilePIDTune = true;
 
     // Values for motor feedforward and trajectory generation
     public static final double ksVolts = 0.2;
