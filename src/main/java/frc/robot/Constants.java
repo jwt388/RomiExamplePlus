@@ -53,10 +53,12 @@ public final class Constants {
     public static final boolean enableDistanceTune = true;
     public static final boolean enableAngleTune = false;
 
+    // Values for motor feedforward and trajectory generation
     public static final double ksVolts = 0.2;
     public static final double kvVoltSecondsPerMeter = 8.0;
     public static final double kaVoltSecondsSquaredPerMeter = 0.2;
     public static final double kPDriveVel = 4.0;
+    public static final double kMaxVoltage = 6.0;
 
     // Reasonable baseline values for a RAMSETE follower in units of meters and seconds
     public static final double kRamseteB = 2;

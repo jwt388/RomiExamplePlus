@@ -8,25 +8,23 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.wpilibj.GenericHID;
-import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.XboxController.Button;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.commands.ArcadeDrive;
 import frc.robot.commands.CurvatureDrive;
 import frc.robot.commands.AutonomousDistance;
-import frc.robot.commands.AutonomousTime;
 import frc.robot.commands.DriveBox;
 import frc.robot.commands.DriveDistancePID;
 import frc.robot.commands.DriveDistanceProfiledPID;
 import frc.robot.commands.ResetOdometry;
 import frc.robot.commands.TankDrive;
-import frc.robot.commands.DriveArcDistance;
 import frc.robot.commands.TurnToAngle;
+import frc.robot.commands.ramseteTrajectory;
 import frc.robot.commands.pathCommands;
 import frc.robot.subsystems.Drivetrain;
-import frc.robot.subsystems.OnBoardIO;
-import frc.robot.subsystems.OnBoardIO.ChannelMode;
+import edu.wpi.first.wpilibj.romi.OnBoardIO;
+import edu.wpi.first.wpilibj.romi.OnBoardIO.ChannelMode;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -47,10 +45,8 @@ public class RobotContainer {
   private final OnBoardIO m_onboardIO = new OnBoardIO(ChannelMode.OUTPUT, ChannelMode.OUTPUT); // Enable LEDs
 
   // Assumes a gamepad plugged into channel 0
-  // public static final Joystick m_controller = new Joystick(0);
-  // public static final Joystick m_controller2 = new Joystick(1);
+
   public static final XboxController m_controller = new XboxController(0); 
-  //private final CommandXboxController m_controller = new CommandXboxController(0); 
 
   // Create SmartDashboard choosers for autonomous routines and drive mode
   private final SendableChooser<Command> m_chooserAuto = new SendableChooser<>();
@@ -112,7 +108,6 @@ public class RobotContainer {
       .onFalse(new InstantCommand(() -> m_drivetrain.setMaxOutput( 1.0)));
 
     // Based on gyrodrivecommands example
-
     // Stabilize the robot to drive straight when left bumper is held
 
     new JoystickButton(m_controller, Button.kLeftBumper.value)
@@ -136,16 +131,8 @@ public class RobotContainer {
     new JoystickButton(m_controller, Button.kB.value)
         .onTrue(new TurnToAngle(-90, m_drivetrain).withTimeout(5));
 
-    /* Example of how to use the Romi onboard IO
-    Trigger onboardButtonA = new Trigger(m_onboardIO::getButtonAPressed);
-    onboardButtonA
-        .onTrue(new PrintCommand("Romi Button A Pressed"))
-        .onFalse(new PrintCommand("Romi Button A Released"));
-    */
-
     m_onboardIO.setRedLed(false);
     m_onboardIO.setGreenLed(false);
-    //m_onboardIO.setYellowLed(false);
 
     // Setup triggers for controller buttons
     Trigger aButton = new JoystickButton(m_controller, XboxController.Button.kA.value);
@@ -154,7 +141,6 @@ public class RobotContainer {
     // Reset gyro and odometry when 'A' button of the contoroller is pressed
     aButton
     .onTrue(new ResetOdometry(m_drivetrain));
-      // .onTrue(new InstantCommand(() -> m_drivetrain.resetOdometry(new Pose2d(Constants.startX, Constants.startY, new Rotation2d())) ));
 
     // Setup SmartDashboard options
     m_chooserAuto.setDefaultOption("Auto Routine Distance", new AutonomousDistance(m_drivetrain));
@@ -162,8 +148,10 @@ public class RobotContainer {
     m_chooserAuto.addOption("Auto Routine Box", new DriveBox(m_drivetrain));
     m_chooserAuto.addOption("Distance PID", new DriveDistancePID(1, m_drivetrain));
     m_chooserAuto.addOption("Profiled Distance PID", new DriveDistanceProfiledPID(1, m_drivetrain));
-    m_chooserAuto.addOption("Ramsete Manual S",  pathCommands.getRamseteManual(m_drivetrain));
-    m_chooserAuto.addOption("Ramsete from File",  pathCommands.getRamseteFromFile(m_drivetrain));
+    m_chooserAuto.addOption("Ramsete Manual S",  new ramseteTrajectory(m_drivetrain, 
+                                  pathCommands.getManualTrajectory()));
+    m_chooserAuto.addOption("Ramsete from File",  new ramseteTrajectory(m_drivetrain, 
+                                  pathCommands.getFileTrajectory("two_cups.wpilib.json")));
     SmartDashboard.putData(m_chooserAuto);
 
   }
@@ -174,8 +162,9 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    return pathCommands.getRamseteFromFile(m_drivetrain);
-    // return m_chooserAuto.getSelected();
+
+    return m_chooserAuto.getSelected();
+
   }
 
   /**
@@ -214,6 +203,5 @@ public class RobotContainer {
             () -> -m_rightLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(4),0.1)));
     }
   }
-
   
 }

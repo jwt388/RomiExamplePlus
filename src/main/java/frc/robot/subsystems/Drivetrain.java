@@ -19,7 +19,7 @@ import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import frc.robot.Constants;
 import frc.robot.commands.ResetOdometry;
-import frc.robot.sensors.RomiGyro;
+import edu.wpi.first.wpilibj.romi.RomiGyro;
 import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -62,7 +62,6 @@ public class Drivetrain extends SubsystemBase {
 
   private final SimpleMotorFeedforward m_feedforward = new SimpleMotorFeedforward(kS, kV);
 
-
   // Set up the BuiltInAccelerometer
   private final BuiltInAccelerometer m_accelerometer = new BuiltInAccelerometer();
 
@@ -93,7 +92,7 @@ public class Drivetrain extends SubsystemBase {
     m_diffDrive.setDeadband(0.0);
 
     m_odometry = new DifferentialDriveOdometry(
-        m_gyro.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
+        getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
 
     // Set starting pose
     resetOdometry(new Pose2d(Constants.startX, Constants.startY, new Rotation2d()));
@@ -107,7 +106,7 @@ public class Drivetrain extends SubsystemBase {
     // This method will be called once per scheduler run
 
     m_pose = m_odometry.update(
-        m_gyro.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
+        getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
 
     m_field.setRobotPose(m_odometry.getPoseMeters());
     SmartDashboard.putData(m_field);
@@ -151,7 +150,7 @@ public class Drivetrain extends SubsystemBase {
   /** Updates the field-relative position. */
   public void updateOdometry() {
     m_odometry.update(
-        m_gyro.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
+        getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
   }
 
   /** Reset gyro and odometry to zero. */
@@ -159,7 +158,7 @@ public class Drivetrain extends SubsystemBase {
     resetEncoders();
     m_gyro.reset();
     m_odometry.resetPosition(
-      m_gyro.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance(), pose);
+      getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance(), pose);
   }
 
   public void arcadeDrive(double xaxisSpeed, double zaxisRotate, boolean squareInputs) {
@@ -207,14 +206,6 @@ public class Drivetrain extends SubsystemBase {
   public void resetEncoders() {
     m_leftEncoder.reset();
     m_rightEncoder.reset();
-  }
-
-  public int getLeftEncoderCount() {
-    return m_leftEncoder.get();
-  }
-
-  public int getRightEncoderCount() {
-    return m_rightEncoder.get();
   }
 
   public void setMaxOutput(double maxOutput) {
@@ -293,7 +284,11 @@ public class Drivetrain extends SubsystemBase {
    * @return The current angle of the Romi in degrees
    */
   public double getHeading() {
-    return m_gyro.getRotation2d().getDegrees();
+    return getRotation2d().getDegrees();
+  }
+
+  public Rotation2d getRotation2d() {
+    return Rotation2d.fromDegrees(-m_gyro.getAngleZ());
   }
 
   /**
