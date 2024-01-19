@@ -171,6 +171,4 @@ out/
 
 # Simulation GUI and other tools window save file
 *-window.json
-simgui*
-networktables.json
-networktables.json.bck
+

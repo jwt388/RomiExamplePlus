@@ -12,6 +12,7 @@ public class TankDrive extends Command {
   private final Drivetrain m_drivetrain;
   private final Supplier<Double> m_leftSpeedSupplier;
   private final Supplier<Double> m_rightSpeedSupplier;
+  private final Boolean m_squareInputs;
 
   /**
    * Creates a new ArcadeDrive. This command will drive your robot according to the speed supplier
@@ -20,14 +21,17 @@ public class TankDrive extends Command {
    * @param drivetrain The drivetrain subsystem on which this command will run
    * @param xaxisSpeedSupplier Lambda supplier of forward/backward speed
    * @param zaxisRotateSupplier Lambda supplier of rotational speed
+   * @param squareInputs square input values
    */
   public TankDrive(
       Drivetrain drivetrain,
       Supplier<Double> leftSpeedSupplier,
-      Supplier<Double> rightSpeedSupplier) {
+      Supplier<Double> rightSpeedSupplier,
+      Boolean squareInputs) {
     m_drivetrain = drivetrain;
     m_leftSpeedSupplier = leftSpeedSupplier;
     m_rightSpeedSupplier = rightSpeedSupplier;
+    m_squareInputs = squareInputs;
     addRequirements(drivetrain);
   }
 
@@ -38,7 +42,7 @@ public class TankDrive extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    m_drivetrain.tankDrive(m_leftSpeedSupplier.get(), m_rightSpeedSupplier.get());
+    m_drivetrain.tankDrive(m_leftSpeedSupplier.get(), m_rightSpeedSupplier.get(), m_squareInputs);
   }
 
   // Called once the command ends or is interrupted.

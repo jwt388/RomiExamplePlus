@@ -53,8 +53,12 @@ public class RobotContainer {
   private final SendableChooser<String> m_chooserDrive = new SendableChooser<>();
 
   // Slew rate limiters for joystick inputs
-  private final SlewRateLimiter m_leftLimiter = new SlewRateLimiter(10);
-  private final SlewRateLimiter m_rightLimiter = new SlewRateLimiter(10);
+  private SlewRateLimiter m_leftLimiter;
+  private SlewRateLimiter m_rightLimiter;
+  private SlewRateLimiter m_turnLimiter;
+
+  private double fullSpeedMax = 1.0;
+  private double crawlSpeedMax = 0.5;
 
   // NOTE: The I/O pin functionality of the 5 exposed I/O pins depends on the hardware "overlay"
   // that is specified when launching the wpilib-ws server on the Romi raspberry pi.
@@ -92,7 +96,6 @@ public class RobotContainer {
     m_chooserDrive.setDefaultOption("Drive Mode - Arcade", "arcade");
     m_chooserDrive.addOption("Drive Mode - Tank", "tank");
     m_chooserDrive.addOption("Drive Mode - Curvature", "curve");
-    m_chooserDrive.addOption("Drive Mode - Curve+Zero", "curveZero");
     m_chooserDrive.addOption("Drive Mode - Arcade Raw", "arcadeRaw");
     
     SmartDashboard.putData(m_chooserDrive);
@@ -100,28 +103,28 @@ public class RobotContainer {
     // Default command is manual drive. This will run unless another command
     // is scheduled over it.
     m_drivetrain.setDefaultCommand(getDriveCommand());
-    m_drivetrain.setMaxOutput( 1.0);
+    m_drivetrain.setMaxOutput(fullSpeedMax);
 
     // Drive at half speed when the right bumper is held
     new JoystickButton(m_controller, Button.kRightBumper.value)
-      .onTrue(new InstantCommand(() -> m_drivetrain.setMaxOutput(0.5)))
-      .onFalse(new InstantCommand(() -> m_drivetrain.setMaxOutput( 1.0)));
+      .onTrue(new InstantCommand(() -> m_drivetrain.setMaxOutput(crawlSpeedMax)))
+      .onFalse(new InstantCommand(() -> m_drivetrain.setMaxOutput(fullSpeedMax)));
 
     // Based on gyrodrivecommands example
     // Stabilize the robot to drive straight when left bumper is held
 
-    new JoystickButton(m_controller, Button.kLeftBumper.value)
-      .whileTrue(
-        new PIDCommand(
-          new PIDController(Constants.kPStabilization, Constants.kIStabilization, Constants.kDStabilization), 
-          // Close the loop on turn rate
-          m_drivetrain::getGyroRateZ,
-          // Set point is 0 deg/sec
-          0,
-          // Pipe the output to the turning control
-          output ->  m_drivetrain.arcadeDrive(-m_controller.getRawAxis(1), output, false),
-          // Drivetrain is required
-          m_drivetrain));
+    // new JoystickButton(m_controller, Button.kLeftBumper.value)
+    //   .whileTrue(
+    //     new PIDCommand(
+    //       new PIDController(Constants.kPStabilization, Constants.kIStabilization, Constants.kDStabilization), 
+    //       // Close the loop on turn rate
+    //       m_drivetrain::getGyroRateZ,
+    //       // Set point is 0 deg/sec
+    //       0,
+    //       // Pipe the output to the turning control
+    //       output ->  m_drivetrain.arcadeDrive(-m_controller.getRawAxis(1), output, false),
+    //       // Drivetrain is required
+    //       m_drivetrain));
 
     // Turn to 90 degrees when the 'X' button is pressed, with a 5 second timeout
     new JoystickButton(m_controller, Button.kX.value)
@@ -154,6 +157,13 @@ public class RobotContainer {
                                   pathCommands.getFileTrajectory("two_cups.wpilib.json")));
     SmartDashboard.putData(m_chooserAuto);
 
+    SmartDashboard.putBoolean("Square Inputs", true);
+    SmartDashboard.putNumber("Deadband", 0.05);
+    SmartDashboard.putNumber("Turning Factor", 1.0);
+    SmartDashboard.putNumber("Slew Limit Speed", 100.0);
+    SmartDashboard.putNumber("Slew Limit Turn", 100.0);
+    SmartDashboard.putNumber("Full Speed", 1.0);
+    SmartDashboard.putNumber("Crawl Speed", 0.5);
   }
 
   /**
@@ -174,22 +184,33 @@ public class RobotContainer {
    */
   public Command getDriveCommand() {
 
+    boolean squareInputs = SmartDashboard.getBoolean("Square Inputs", true);
+    double deadband = SmartDashboard.getNumber("Deadband", 0.05);
+    double turnFactor = SmartDashboard.getNumber("Turning Factor", 1.0);
+    double slewLimitSpeed = SmartDashboard.getNumber("Slew Limit Speed", 100.0);
+    double slewLimitTurn = SmartDashboard.getNumber("Slew Limit Turn", 100.0);
+    fullSpeedMax = SmartDashboard.getNumber("Full Speed", 1.0);
+    crawlSpeedMax = SmartDashboard.getNumber("Crawl Speed", 0.5);
+
+    m_leftLimiter = new SlewRateLimiter(slewLimitSpeed);
+    m_rightLimiter = new SlewRateLimiter(slewLimitSpeed);
+    m_turnLimiter = new SlewRateLimiter(slewLimitTurn);
+
+    m_drivetrain.setMaxOutput(fullSpeedMax);
+
     switch(m_chooserDrive.getSelected()) {
 
       case "tank":
         return new TankDrive(
-            m_drivetrain, () -> -m_leftLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(1),0.1)),
-            () -> -m_rightLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(5),0.1)));
+            m_drivetrain, () -> -m_leftLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(1),deadband)),
+            () -> -m_rightLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(5),deadband)),
+            squareInputs);
 
       case "curve":
         return new CurvatureDrive(
-            m_drivetrain, () -> -m_leftLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(1),0.1)),
-            () -> -m_rightLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(4),0.1)), false);
-
-      case "curveZero":
-        return new CurvatureDrive(
-            m_drivetrain, () -> -m_leftLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(1),0.1)),
-            () -> -m_rightLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(4),0.1)), true);
+            m_drivetrain, () -> -m_leftLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(1),deadband)),
+            () -> -turnFactor * m_turnLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(4),deadband)), 
+            () -> m_controller.getLeftBumper());
 
       case "arcadeRaw":
         return new RunCommand(
@@ -199,8 +220,9 @@ public class RobotContainer {
       case "arcade":
       default:
         return new ArcadeDrive(
-            m_drivetrain, () -> -m_leftLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(1),0.1)),
-            () -> -m_rightLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(4),0.1)));
+            m_drivetrain, () -> -m_leftLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(1),deadband)),
+            () -> -turnFactor * m_turnLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(4),deadband)),
+            squareInputs);
     }
   }
   

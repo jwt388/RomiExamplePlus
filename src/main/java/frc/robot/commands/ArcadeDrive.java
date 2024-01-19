@@ -12,6 +12,7 @@ public class ArcadeDrive extends Command {
   private final Drivetrain m_drivetrain;
   private final Supplier<Double> m_xaxisSpeedSupplier;
   private final Supplier<Double> m_zaxisRotateSupplier;
+  private final Boolean m_squareInputs;
 
   /**
    * Creates a new ArcadeDrive. This command will drive your robot according to the speed supplier
@@ -20,14 +21,17 @@ public class ArcadeDrive extends Command {
    * @param drivetrain The drivetrain subsystem on which this command will run
    * @param xaxisSpeedSupplier Lambda supplier of forward/backward speed
    * @param zaxisRotateSupplier Lambda supplier of rotational speed
+   * @param squareInputs square input values
    */
   public ArcadeDrive(
       Drivetrain drivetrain,
       Supplier<Double> xaxisSpeedSupplier,
-      Supplier<Double> zaxisRotateSupplier) {
+      Supplier<Double> zaxisRotateSupplier,
+      Boolean squareInputs) {
     m_drivetrain = drivetrain;
     m_xaxisSpeedSupplier = xaxisSpeedSupplier;
     m_zaxisRotateSupplier = zaxisRotateSupplier;
+    m_squareInputs = squareInputs;
     addRequirements(drivetrain);
   }
 
@@ -38,7 +42,7 @@ public class ArcadeDrive extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
-    m_drivetrain.arcadeDrive(m_xaxisSpeedSupplier.get(), m_zaxisRotateSupplier.get(), true);
+    m_drivetrain.arcadeDrive(m_xaxisSpeedSupplier.get(), m_zaxisRotateSupplier.get(), m_squareInputs);
   }
 
   // Called once the command ends or is interrupted.

@@ -166,8 +166,8 @@ public class Drivetrain extends SubsystemBase {
     m_diffDrive.arcadeDrive(xaxisSpeed, zaxisRotate, squareInputs);
   } 
 
-  public void tankDrive(double leftSpeed, double rightRotate) {
-    m_diffDrive.tankDrive(leftSpeed, rightRotate, true);
+  public void tankDrive(double leftSpeed, double rightRotate, Boolean squareInputs) {
+    m_diffDrive.tankDrive(leftSpeed, rightRotate, squareInputs);
   } 
 
     /**
