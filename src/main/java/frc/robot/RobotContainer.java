@@ -8,10 +8,9 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.wpilibj.GenericHID;
-//import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.XboxController.Button;
-//import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.commands.ArcadeDrive;
 import frc.robot.commands.CurvatureDrive;
@@ -47,8 +46,9 @@ public class RobotContainer {
   private final OnBoardIO m_onboardIO = new OnBoardIO(ChannelMode.OUTPUT, ChannelMode.OUTPUT); // Enable LEDs
 
   // Assumes a gamepad plugged into channel 0
-  //private final Joystick m_controller = new Joystick(0);
-  private final XboxController m_controller = new XboxController(0); 
+  // public static final Joystick m_controller = new Joystick(0);
+  // public static final Joystick m_controller2 = new Joystick(1);
+  public static final XboxController m_controller = new XboxController(0); 
   //private final CommandXboxController m_controller = new CommandXboxController(0); 
 
   // Create SmartDashboard choosers for autonomous routines and drive mode
@@ -96,6 +96,7 @@ public class RobotContainer {
     m_chooserDrive.addOption("Drive Mode - Tank", "tank");
     m_chooserDrive.addOption("Drive Mode - Curvature", "curve");
     m_chooserDrive.addOption("Drive Mode - Curve+Zero", "curveZero");
+    m_chooserDrive.addOption("Drive Mode - Arcade Raw", "arcadeRaw");
     
     SmartDashboard.putData(m_chooserDrive);
 
@@ -159,7 +160,7 @@ public class RobotContainer {
     m_chooserAuto.setDefaultOption("Auto Routine Time", new AutonomousTime(m_drivetrain));
     m_chooserAuto.addOption("Auto Routine Turn to 0", new TurnToAngle(0, m_drivetrain));
     m_chooserAuto.addOption("Auto Routine Box", new DriveBox(m_drivetrain));
-    m_chooserAuto.addOption("Auto Routine ArcDistance", new DriveArcDistance(0.5,1.0, 0.1, m_drivetrain));
+    m_chooserAuto.addOption("Auto Routine ArcDistance", new DriveArcDistance(0.5, 25.0, 0.25, m_drivetrain));
     m_chooserAuto.addOption("Distance PID", new DriveDistancePID(1, m_drivetrain));
     m_chooserAuto.addOption("Profiled Distance PID", new DriveDistanceProfiledPID(1, m_drivetrain));
     SmartDashboard.putData(m_chooserAuto);
@@ -198,6 +199,11 @@ public class RobotContainer {
         return new CurvatureDrive(
             m_drivetrain, () -> -m_leftLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(1),0.1)),
             () -> -m_rightLimiter.calculate(MathUtil.applyDeadband(m_controller.getRawAxis(4),0.1)), true);
+
+      case "arcadeRaw":
+        return new RunCommand(
+            () -> m_drivetrain.arcadeDrive(m_controller.getRawAxis(1), m_controller.getRawAxis(4), false),
+            m_drivetrain);
 
       case "arcade":
       default:

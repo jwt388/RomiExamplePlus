@@ -359,6 +359,10 @@ public class Drivetrain extends SubsystemBase {
     SmartDashboard.putNumber("Left Rate", m_leftEncoder.getRate());
     SmartDashboard.putNumber("Right Rate", m_rightEncoder.getRate());
     SmartDashboard.putNumber("Speed", (m_leftEncoder.getRate() + m_rightEncoder.getRate())/2);
+    SmartDashboard.putNumber("Left Command", m_leftMotor.get());
+    SmartDashboard.putNumber("Right Command", m_rightMotor.get());
+
+
 
     // Update tuning debug if enabled
     if (Constants.enableDistanceTune) {
